@@ -34,7 +34,7 @@ from .models.FLAME import FLAME, FLAMETex
 from .models.decoders import Generator
 from .utils import util
 from .utils.rotation_converter import batch_euler2axis
-from .datasets import datasets
+from .datasets import test_data
 from .utils.config import cfg
 torch.backends.cudnn.benchmark = True
 from .utils import lossfunc
@@ -310,7 +310,7 @@ class Trainer(object):
         self.deca.train()
 
     def evaluate(self):
-        ''' NOW validation 
+        ''' NOW validation
         '''
         os.makedirs(os.path.join(self.cfg.output_dir, 'NOW_validation'), exist_ok=True)
         savefolder = os.path.join(self.cfg.output_dir, 'NOW_validation', f'step_{self.global_step:08}') 

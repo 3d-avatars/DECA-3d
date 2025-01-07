@@ -52,7 +52,7 @@ Clone the repo:
 2. Run demos  
     a. **reconstruction**  
     ```bash
-    python demos/demo_reconstruct.py -i TestSamples/examples --saveDepth True --saveObj True
+    python demos/reconstruct_cmd.py -i TestSamples/examples --saveDepth True --saveObj True
     ```   
     to visualize the predicted 2D landmanks, 3D landmarks (red means non-visible points), coarse geometry, detailed geometry, and depth.   
     <p align="center">   
@@ -67,7 +67,7 @@ Clone the repo:
 
     b. **expression transfer**   
     ```bash
-    python demos/demo_transfer.py
+    python demos/transfer_emotions_cmd.py
     ```   
     Given an image, you can reconstruct its 3D face, then animate it by tranfering expressions from other images. 
     Using Meshlab to open the detailed mesh obj file, you can see something like that:
@@ -100,9 +100,9 @@ Clone the repo:
 
     Train from scratch: 
     ```bash
-    python main_train.py --cfg configs/release_version/deca_pretrain.yml 
-    python main_train.py --cfg configs/release_version/deca_coarse.yml 
-    python main_train.py --cfg configs/release_version/deca_detail.yml 
+    python train.py --cfg configs/release_version/deca_pretrain.yml 
+    python train.py --cfg configs/release_version/deca_coarse.yml 
+    python train.py --cfg configs/release_version/deca_detail.yml 
     ```
     In the yml files, write the right path for 'output_dir' and 'pretrained_modelpath'.  
     You can also use [released model](https://drive.google.com/file/d/1rp8kdyLPvErw2dTmqtjISRVvQLj6Yzje/view) as pretrained model, then ignor the pretrain step.

@@ -1,19 +1,19 @@
 ''' training script of DECA
 '''
-import os, sys
+import os
+import shutil
+import sys
+
 import numpy as np
-import yaml
 import torch
 import torch.backends.cudnn as cudnn
-import torch
-import shutil
-from copy import deepcopy
+import yaml
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '.')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 np.random.seed(0)
 
 def main(cfg):
-    # creat folders 
+    # create folders
     os.makedirs(os.path.join(cfg.output_dir, cfg.train.log_dir), exist_ok=True)
     os.makedirs(os.path.join(cfg.output_dir, cfg.train.vis_dir), exist_ok=True)
     os.makedirs(os.path.join(cfg.output_dir, cfg.train.val_vis_dir), exist_ok=True)
@@ -46,4 +46,4 @@ if __name__ == '__main__':
     main(cfg)
 
 # run:
-# python main_train.py --cfg configs/release_version/deca_pretrain.yml 
+# python train.py --cfg configs/release_version/deca_pretrain.yml

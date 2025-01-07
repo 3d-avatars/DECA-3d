@@ -206,7 +206,7 @@ class Trainer(object):
         util.visualize_grid(visdict, savepath)
 
     def evaluate(self):
-        ''' NOW validation 
+        ''' NOW validation
         '''
         os.makedirs(os.path.join(self.cfg.output_dir, 'NOW_validation'), exist_ok=True)
         savefolder = os.path.join(self.cfg.output_dir, 'NOW_validation', f'step_{self.global_step:08}') 

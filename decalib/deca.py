@@ -13,26 +13,25 @@
 # For comments or questions, please email us at deca@tue.mpg.de
 # For commercial licensing contact, please contact ps-license@tuebingen.mpg.de
 
-import os, sys
-import torch
-import torchvision
-import torch.nn.functional as F
-import torch.nn as nn
+import os
 
 import numpy as np
-from time import time
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torchvision
 from skimage.io import imread
-import cv2
-import pickle
-from .utils.renderer import SRenderY, set_rasterizer
-from .models.encoders import ResnetEncoder
+
 from .models.FLAME import FLAME, FLAMETex
 from .models.decoders import Generator
+from .models.encoders import ResnetEncoder
 from .utils import util
+from .utils.config import cfg
+from .utils.renderer import SRenderY, set_rasterizer
 from .utils.rotation_converter import batch_euler2axis
 from .utils.tensor_cropper import transform_points
-from .datasets import datasets
-from .utils.config import cfg
+
+
 torch.backends.cudnn.benchmark = True
 
 class DECA(nn.Module):
@@ -79,7 +78,7 @@ class DECA(nn.Module):
         self.E_detail = ResnetEncoder(outsize=self.n_detail).to(self.device)
         # decoders
         self.flame = FLAME(model_cfg).to(self.device)
-        if model_cfg.use_tex:
+        if model_cfg.use_texture:
             self.flametex = FLAMETex(model_cfg).to(self.device)
         self.D_detail = Generator(latent_dim=self.n_detail+self.n_cond, out_channels=1, out_scale=model_cfg.max_z, sample_mode = 'bilinear').to(self.device)
         # resume model
@@ -164,7 +163,7 @@ class DECA(nn.Module):
         
         ## decode
         verts, landmarks2d, landmarks3d = self.flame(shape_params=codedict['shape'], expression_params=codedict['exp'], pose_params=codedict['pose'])
-        if self.cfg.model.use_tex:
+        if self.cfg.model.use_texture:
             albedo = self.flametex(codedict['tex'])
         else:
             albedo = torch.zeros([batch_size, 3, self.uv_size, self.uv_size], device=images.device) 
@@ -205,7 +204,7 @@ class DECA(nn.Module):
             opdict['alpha_images'] = ops['alpha_images']
             opdict['normal_images'] = ops['normal_images']
         
-        if self.cfg.model.use_tex:
+        if self.cfg.model.use_texture:
             opdict['albedo'] = albedo
             
         if use_detail:
@@ -236,9 +235,9 @@ class DECA(nn.Module):
             ## TODO: current resolution 256x256, support higher resolution, and add visibility
             uv_pverts = self.render.world2uv(trans_verts)
             uv_gt = F.grid_sample(images, uv_pverts.permute(0,2,3,1)[:,:,:,:2], mode='bilinear', align_corners=False)
-            if self.cfg.model.use_tex:
+            if self.cfg.model.use_texture:
                 ## TODO: poisson blending should give better-looking results
-                if self.cfg.model.extract_tex:
+                if self.cfg.model.extract_texture:
                     uv_texture_gt = uv_gt[:,:3,:,:]*self.uv_face_eye_mask + (uv_texture[:,:3,:,:]*(1-self.uv_face_eye_mask))
                 else:
                     uv_texture_gt = uv_texture[:,:3,:,:]
@@ -253,7 +252,7 @@ class DECA(nn.Module):
                 'shape_images': shape_images,
                 'shape_detail_images': shape_detail_images
             }
-            if self.cfg.model.use_tex:
+            if self.cfg.model.use_texture:
                 visdict['rendered_images'] = ops['images']
 
             return opdict, visdict
@@ -312,7 +311,7 @@ class DECA(nn.Module):
     def run(self, imagepath, iscrop=True):
         ''' An api for running deca given an image path
         '''
-        testdata = datasets.TestData(imagepath)
+        testdata = test_data.TestData(imagepath)
         images = testdata[0]['image'].to(self.device)[None,...]
         codedict = self.encode(images)
         opdict, visdict = self.decode(codedict)
