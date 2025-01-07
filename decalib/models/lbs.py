@@ -15,13 +15,13 @@
 # Contact: ps-license@tuebingen.mpg.de
 
 from __future__ import absolute_import
-from __future__ import print_function
 from __future__ import division
+from __future__ import print_function
 
 import numpy as np
-
 import torch
 import torch.nn.functional as F
+
 
 def rot_mat_to_euler(rot_mats):
     # Calculates rotation matrix to euler angles
@@ -31,10 +31,12 @@ def rot_mat_to_euler(rot_mats):
                     rot_mats[:, 1, 0] * rot_mats[:, 1, 0])
     return torch.atan2(-rot_mats[:, 2, 0], sy)
 
+
 def find_dynamic_lmk_idx_and_bcoords(vertices, pose, dynamic_lmk_faces_idx,
                                      dynamic_lmk_b_coords,
                                      neck_kin_chain, dtype=torch.float32):
-    ''' Compute the faces, barycentric coordinates for the dynamic landmarks
+    """
+    Compute the faces, barycentric coordinates for the dynamic landmarks
 
 
         To do so, we first compute the rotation of the neck around the y-axis
@@ -67,7 +69,7 @@ def find_dynamic_lmk_idx_and_bcoords(vertices, pose, dynamic_lmk_faces_idx,
         dyn_lmk_b_coords: torch.tensor, dtype = torch.float32
             A tensor of size BxL that contains the indices of the faces that
             will be used to compute the current dynamic landmarks.
-    '''
+    """
 
     batch_size = vertices.shape[0]
 
@@ -99,7 +101,7 @@ def find_dynamic_lmk_idx_and_bcoords(vertices, pose, dynamic_lmk_faces_idx,
 
 
 def vertices2landmarks(vertices, faces, lmk_faces_idx, lmk_bary_coords):
-    ''' Calculates landmarks by barycentric interpolation
+    """ Calculates landmarks by barycentric interpolation
 
         Parameters
         ----------
@@ -118,7 +120,7 @@ def vertices2landmarks(vertices, faces, lmk_faces_idx, lmk_bary_coords):
         -------
         landmarks: torch.tensor BxLx3, dtype = torch.float32
             The coordinates of the landmarks for each mesh in the batch
-    '''
+    """
     # Extract the indices of the vertices for each face
     # BxLx3
     batch_size, num_verts = vertices.shape[:2]
@@ -139,7 +141,7 @@ def vertices2landmarks(vertices, faces, lmk_faces_idx, lmk_bary_coords):
 
 def lbs(betas, pose, v_template, shapedirs, posedirs, J_regressor, parents,
         lbs_weights, pose2rot=True, dtype=torch.float32):
-    ''' Performs Linear Blend Skinning with the given shape and pose parameters
+    """ Performs Linear Blend Skinning with the given shape and pose parameters
 
         Parameters
         ----------
@@ -175,7 +177,7 @@ def lbs(betas, pose, v_template, shapedirs, posedirs, J_regressor, parents,
             displacements.
         joints: torch.tensor BxJx3
             The joints of the model
-    '''
+    """
 
     batch_size = max(betas.shape[0], pose.shape[0])
     device = betas.device
@@ -228,7 +230,7 @@ def lbs(betas, pose, v_template, shapedirs, posedirs, J_regressor, parents,
 
 
 def vertices2joints(J_regressor, vertices):
-    ''' Calculates the 3D joint locations from the vertices
+    """ Calculates the 3D joint locations from the vertices
 
     Parameters
     ----------
@@ -242,13 +244,13 @@ def vertices2joints(J_regressor, vertices):
     -------
     torch.tensor BxJx3
         The location of the joints
-    '''
+    """
 
     return torch.einsum('bik,ji->bjk', [vertices, J_regressor])
 
 
 def blend_shapes(betas, shape_disps):
-    ''' Calculates the per vertex displacement due to the blend shapes
+    """ Calculates the per vertex displacement due to the blend shapes
 
 
     Parameters
@@ -262,7 +264,7 @@ def blend_shapes(betas, shape_disps):
     -------
     torch.tensor BxVx3
         The per-vertex displacement due to shape deformation
-    '''
+    """
 
     # Displacement[b, m, k] = sum_{l} betas[b, l] * shape_disps[m, k, l]
     # i.e. Multiply each shape displacement by its corresponding beta and
@@ -272,7 +274,7 @@ def blend_shapes(betas, shape_disps):
 
 
 def batch_rodrigues(rot_vecs, epsilon=1e-8, dtype=torch.float32):
-    ''' Calculates the rotation matrices for a batch of rotation vectors
+    """ Calculates the rotation matrices for a batch of rotation vectors
         Parameters
         ----------
         rot_vecs: torch.tensor Nx3
@@ -281,7 +283,7 @@ def batch_rodrigues(rot_vecs, epsilon=1e-8, dtype=torch.float32):
         -------
         R: torch.tensor Nx3x3
             The rotation matrices for the given axis-angle parameters
-    '''
+    """
 
     batch_size = rot_vecs.shape[0]
     device = rot_vecs.device
@@ -306,16 +308,21 @@ def batch_rodrigues(rot_vecs, epsilon=1e-8, dtype=torch.float32):
 
 
 def transform_mat(R, t):
-    ''' Creates a batch of transformation matrices
+    """ Creates a batch of transformation matrices
         Args:
             - R: Bx3x3 array of a batch of rotation matrices
             - t: Bx3x1 array of a batch of translation vectors
         Returns:
             - T: Bx4x4 Transformation matrix
-    '''
+    """
     # No padding left or right, only add an extra row
-    return torch.cat([F.pad(R, [0, 0, 0, 1]),
-                      F.pad(t, [0, 0, 0, 1], value=1)], dim=2)
+    return torch.cat(
+        [
+            F.pad(R, [0, 0, 0, 1]),
+            F.pad(t, [0, 0, 0, 1], value=1)
+        ],
+        dim=2
+    )
 
 
 def batch_rigid_transform(rot_mats, joints, parents, dtype=torch.float32):

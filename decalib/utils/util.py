@@ -13,19 +13,19 @@
 # For comments or questions, please email us at deca@tue.mpg.de
 # For commercial licensing contact, please contact ps-license@tuebingen.mpg.de
 
+import os
+from collections import OrderedDict
+
+import cv2
 import numpy as np
 import torch
 import torch.nn.functional as F
-import math
-from collections import OrderedDict
-import os
-from scipy.ndimage import morphology
-from skimage.io import imsave
-import cv2
 import torchvision
+from scipy.ndimage import morphology
+
 
 def upsample_mesh(vertices, normals, faces, displacement_map, texture_map, dense_template):
-    ''' Credit to Timo
+    """ Credit to Timo
     upsampling coarse mesh (with displacment map)
         vertices: vertices of coarse mesh, [nv, 3]
         normals: vertex normals, [nv, 3]
@@ -37,7 +37,7 @@ def upsample_mesh(vertices, normals, faces, displacement_map, texture_map, dense
         dense_vertices: upsampled vertices with details, [number of dense vertices, 3]
         dense_colors: vertex color, [number of dense vertices, 3]
         dense_faces: [number of dense faces, 3]
-    '''
+    """
     img_size = dense_template['img_size']
     dense_faces = dense_template['f']
     x_coords = dense_template['x_coords']
@@ -71,7 +71,7 @@ def write_obj(obj_name,
               inverse_face_order=False,
               normal_map=None,
               ):
-    ''' Save 3D face model with texture.
+    """ Save 3D face model with texture.
     Ref: https://github.com/patrikhuber/eos/blob/bd00155ebae4b1a13b08bf5a991694d682abbada/include/eos/core/Mesh.hpp
     Args:
         obj_name: str
@@ -80,7 +80,7 @@ def write_obj(obj_name,
         faces: shape = (ntri, 3)
         texture: shape = (uv_size, uv_size, 3)
         uvcoords: shape = (nver, 2) max value<=1
-    '''
+    """
     if os.path.splitext(obj_name)[-1] != '.obj':
         obj_name = obj_name + '.obj'
     mtl_name = obj_name.replace('.obj', '.mtl')
@@ -281,10 +281,10 @@ def vertex_normals(vertices, faces):
     return normals
 
 def batch_orth_proj(X, camera):
-    ''' orthgraphic projection
+    """ orthgraphic projection
         X:  3d vertices, [bz, n_point, 3]
         camera: scale and translation, [bz, 3], [scale, tx, ty]
-    '''
+    """
     camera = camera.clone().view(-1, 1, 3)
     X_trans = X[:, :, :2] + camera[:, :, 1:]
     X_trans = torch.cat([X_trans, X[:,:,2:]], 2)
@@ -445,7 +445,7 @@ def laplacian(x):
     return F.conv2d(x, kernel, padding=padding, stride=1, groups=c)
 
 def angle2matrix(angles):
-    ''' get rotation matrix from three rotation angles(degree). right-handed.
+    """ get rotation matrix from three rotation angles(degree). right-handed.
     Args:
         angles: [batch_size, 3] tensor containing X, Y, and Z angles.
         x: pitch. positive for looking down.
@@ -453,7 +453,7 @@ def angle2matrix(angles):
         z: roll. positive for tilting head right. 
     Returns:
         R: [batch_size, 3, 3]. rotation matrices.
-    '''
+    """
     angles = angles*(np.pi)/180.
     s = torch.sin(angles)
     c = torch.cos(angles)
@@ -486,14 +486,14 @@ def binary_erosion(tensor, kernel_size=5):
     return torch.from_numpy(new_mask.astype(np.float32)).to(device)
 
 def flip_image(src_image, kps):
-    '''
+    """
         purpose:
             flip a image given by src_image and the 2d keypoints
         flip_mode: 
             0: horizontal flip
             >0: vertical flip
             <0: horizontal & vertical flip
-    '''
+    """
     h, w = src_image.shape[0], src_image.shape[1]
     src_image = cv2.flip(src_image, 1)
     if kps is not None:
@@ -577,11 +577,11 @@ def dict_tensor2npy(tensor_dict):
 # ---------------------------------- visualization
 end_list = np.array([17, 22, 27, 42, 48, 31, 36, 68], dtype = np.int32) - 1
 def plot_kpts(image, kpts, color = 'r'):
-    ''' Draw 68 key points
+    """ Draw 68 key points
     Args: 
         image: the input image
         kpt: (68, 3).
-    '''
+    """
     if color == 'r':
         c = (255, 0, 0)
     elif color == 'g':
@@ -607,11 +607,11 @@ def plot_kpts(image, kpts, color = 'r'):
     return image
 
 def plot_verts(image, kpts, color = 'r'):
-    ''' Draw 68 key points
+    """ Draw 68 key points
     Args: 
         image: the input image
         kpt: (68, 3).
-    '''
+    """
     if color == 'r':
         c = (255, 0, 0)
     elif color == 'g':
@@ -682,10 +682,10 @@ def load_local_mask(image_size=256, mode='bbx'):
     return regional_mask
 
 def visualize_grid(visdict, savepath=None, size=224, dim=1, return_gird=True):
-    '''
+    """
     image range should be [0,1]
     dim: 2 for horizontal. 1 for vertical
-    '''
+    """
     assert dim == 1 or dim==2
     grids = {}
     for key in visdict:

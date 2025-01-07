@@ -22,17 +22,18 @@ import torch.nn.functional as F
 import torchvision
 from skimage.io import imread
 
-from .models.FLAME import FLAME, FLAMETex
-from .models.decoders import Generator
-from .models.encoders import ResnetEncoder
-from .utils import util
-from .utils.config import cfg
-from .utils.renderer import SRenderY, set_rasterizer
-from .utils.rotation_converter import batch_euler2axis
-from .utils.tensor_cropper import transform_points
-
+from decalib.datasets import test_data
+from decalib.models.FLAME import FLAME, FLAMETex
+from decalib.models.decoders import Generator
+from decalib.models.encoders import ResnetEncoder
+from decalib.utils import util
+from decalib.utils.config import cfg
+from decalib.utils.renderer import SRenderY, set_rasterizer
+from decalib.utils.rotation_converter import batch_euler2axis
+from decalib.utils.tensor_cropper import transform_points
 
 torch.backends.cudnn.benchmark = True
+
 
 class DECA(nn.Module):
     def __init__(self, config=None, device='cuda'):
@@ -99,9 +100,10 @@ class DECA(nn.Module):
         self.D_detail.eval()
 
     def decompose_code(self, code, num_dict):
-        ''' Convert a flattened parameter vector to a dictionary of parameters
+        """
+        Convert a flattened parameter vector to a dictionary of parameters
         code_dict.keys() = ['shape', 'tex', 'exp', 'pose', 'cam', 'light']
-        '''
+        """
         code_dict = {}
         start = 0
         for key in num_dict:
@@ -113,8 +115,8 @@ class DECA(nn.Module):
         return code_dict
 
     def displacement2normal(self, uv_z, coarse_verts, coarse_normals):
-        ''' Convert displacement map into detail normal map
-        '''
+        """ Convert displacement map into detail normal map
+        """
         batch_size = uv_z.shape[0]
         uv_coarse_vertices = self.render.world2uv(coarse_verts).detach()
         uv_coarse_normals = self.render.world2uv(coarse_normals).detach()
@@ -128,8 +130,8 @@ class DECA(nn.Module):
         return uv_detail_normals
 
     def visofp(self, normals):
-        ''' visibility of keypoints, based on the normal direction
-        '''
+        """ visibility of keypoints, based on the normal direction
+        """
         normals68 = self.flame.seletec_3d68(normals)
         vis68 = (normals68[:,:,2:] < 0.1).float()
         return vis68
@@ -261,10 +263,10 @@ class DECA(nn.Module):
             return opdict
 
     def visualize(self, visdict, size=224, dim=2):
-        '''
+        """
         image range should be [0,1]
         dim: 2 for horizontal. 1 for vertical
-        '''
+        """
         assert dim == 1 or dim==2
         grids = {}
         for key in visdict:
@@ -280,10 +282,10 @@ class DECA(nn.Module):
         return grid_image
     
     def save_obj(self, filename, opdict):
-        '''
+        """
         vertices: [nv, 3], tensor
         texture: [3, h, w], tensor
-        '''
+        """
         i = 0
         vertices = opdict['verts'][i].cpu().numpy()
         faces = self.render.faces[0].cpu().numpy()
@@ -309,8 +311,8 @@ class DECA(nn.Module):
                         inverse_face_order=True)
     
     def run(self, imagepath, iscrop=True):
-        ''' An api for running deca given an image path
-        '''
+        """ An api for running deca given an image path
+        """
         testdata = test_data.TestData(imagepath)
         images = testdata[0]['image'].to(self.device)[None,...]
         codedict = self.encode(images)

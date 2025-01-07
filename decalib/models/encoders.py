@@ -13,11 +13,10 @@
 # For comments or questions, please email us at deca@tue.mpg.de
 # For commercial licensing contact, please contact ps-license@tuebingen.mpg.de
 
-import numpy as np
 import torch.nn as nn
-import torch
-import torch.nn.functional as F
+
 from . import resnet
+
 
 class ResnetEncoder(nn.Module):
     def __init__(self, outsize, last_op=None):

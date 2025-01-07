@@ -1,4 +1,4 @@
-# '''
+# """
 # detail:
 # This is followed by training the detail model (i.e. 𝐸𝑑
 # and 𝐹𝑑
@@ -7,13 +7,14 @@
 # 𝜆𝑠𝑦𝑚 = 5𝑒 − 3, 𝜆𝑑𝑐 = 1.0, and 𝜆𝑟𝑒𝑔𝐷 = 5𝑒 − 3.
 
 # why:
-# '''
+# """
 # pretrained_modelpath: '/ps/scratch/yfeng/Data/Projects-data/DECA-training/training/DECA_SIGGRAPH/pretrain/model.tar'
 output_dir: "/ps/scratch/yfeng/Data/Projects-data/DECA-training/training/DECA_release_version/detail"
 pretrained_modelpath: "/ps/scratch/yfeng/Data/Projects-data/DECA-training/training/DECA_release_version/coarse/model.tar"
 dataset:
   batch_size: 6
   K: 3
+  training_data: ['vggface2', 'vox2']
 train:
   train_detail: True
   resume: True
@@ -24,6 +25,4 @@ train:
   checkpoint_steps: 1000
   val_steps: 500
   eval_steps: 1000
-dataset:
-  training_data: ['vggface2', 'vox2']
 # python main_train_deca_release.py --cfg configs/release_version/deca_coarse.yml

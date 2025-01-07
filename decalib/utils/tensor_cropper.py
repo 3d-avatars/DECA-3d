@@ -1,14 +1,13 @@
-'''
+"""
 crop
 for torch tensor
 Given image, bbox(center, bboxsize)
 return: cropped image, tform(used for transform the keypoint accordingly)
 only support crop to squared images
-'''
+"""
 import torch
-from kornia.geometry.transform.imgwarp import (
-    warp_perspective, get_perspective_transform, warp_affine
-)
+from kornia.geometry.transform.imgwarp import get_perspective_transform, warp_affine
+
 
 def points2bbox(points, points_scale=None):
     if points_scale:
@@ -27,6 +26,7 @@ def points2bbox(points, points_scale=None):
     size = torch.max(width, height).unsqueeze(-1)
     return center, size
 
+
 def augment_bbox(center, bbox_size, scale=[1.0, 1.0], trans_scale=0.):
     batch_size = center.shape[0]
     trans_scale = (torch.rand([batch_size, 2], device=center.device)*2. -1.) * trans_scale
@@ -35,8 +35,9 @@ def augment_bbox(center, bbox_size, scale=[1.0, 1.0], trans_scale=0.):
     size = bbox_size*scale
     return center, size
 
+
 def crop_tensor(image, center, bbox_size, crop_size, interpolation = 'bilinear', align_corners=False):
-    ''' for batch image
+    """ for batch image
     Args:
         image (torch.Tensor): the reference tensor of shape BXHxWXC.
         center: [bz, 2]
@@ -48,7 +49,7 @@ def crop_tensor(image, center, bbox_size, crop_size, interpolation = 'bilinear',
     Returns:
         cropped_image
         tform
-    '''
+    """
     dtype = image.dtype
     device = image.device
     batch_size = image.shape[0]
@@ -82,6 +83,7 @@ def crop_tensor(image, center, bbox_size, crop_size, interpolation = 'bilinear',
     # tform = torch.inverse(dst_trans_src)
     return cropped_image, tform
 
+
 class Cropper(object):
     def __init__(self, crop_size, scale=[1,1], trans_scale = 0.):
         self.crop_size = crop_size
@@ -114,6 +116,7 @@ class Cropper(object):
         if normalize:
             trans_points[:,:,:2] = trans_points[:,:,:2]/self.crop_size*2 - 1
         return trans_points
+
 
 def transform_points(points, tform, points_scale=None, out_scale=None):
     points_2d = points[:,:,:2]

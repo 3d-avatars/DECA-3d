@@ -13,32 +13,23 @@
 # For comments or questions, please email us at deca@tue.mpg.de
 # For commercial licensing contact, please contact ps-license@tuebingen.mpg.de
 
-import os, sys
-import torch
-import torchvision
-import torch.nn.functional as F
-import torch.nn as nn
-from torch.utils.data import DataLoader
-import numpy as np
-from time import time
-from skimage.io import imread
-import cv2
-import pickle
-from loguru import logger
+import os
 from datetime import datetime
+
+import numpy as np
+import torch
+import torch.nn.functional as F
+from loguru import logger
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from .utils.renderer import SRenderY
-from .models.encoders import ResnetEncoder
-from .models.FLAME import FLAME, FLAMETex
-from .models.decoders import Generator
-from .utils import util
-from .utils.rotation_converter import batch_euler2axis
-from .datasets import datasets
-from .utils.config import cfg
+from decalib.datasets import build_datasets
+from decalib.utils import lossfunc
+from decalib.utils import util
+from decalib.utils.config import cfg
+
 torch.backends.cudnn.benchmark = True
-from .utils import lossfunc
-from .datasets import build_datasets
+
 
 class Trainer(object):
     def __init__(self, model, config=None, device='cuda:0'):
@@ -111,11 +102,11 @@ class Trainer(object):
         
         ### shape constraints
         if self.cfg.loss.shape_consistency == 'exchange':
-            '''
+            """
             make sure s0, s1 is something to make shape close
             the difference from ||so - s1|| is 
             the later encourage s0, s1 is cloase in l2 space, but not really ensure shape will be close
-            '''
+            """
             new_order = np.array([np.random.permutation(self.K) + i*self.K for i in range(self.batch_size)])
             new_order = new_order.flatten()
             shapecode = codedict['shape']
@@ -206,14 +197,14 @@ class Trainer(object):
         util.visualize_grid(visdict, savepath)
 
     def evaluate(self):
-        ''' NOW validation
-        '''
+        """ NOW validation
+        """
         os.makedirs(os.path.join(self.cfg.output_dir, 'NOW_validation'), exist_ok=True)
         savefolder = os.path.join(self.cfg.output_dir, 'NOW_validation', f'step_{self.global_step:08}') 
         os.makedirs(savefolder, exist_ok=True)
         self.deca.eval()
         # run now validation images
-        from .datasets.now import NoWDataset #, NoWVal_old
+        from decalib.datasets.now import NoWDataset #, NoWVal_old
         dataset = NoWDataset(scale=(self.cfg.dataset.scale_min + self.cfg.dataset.scale_max)/2)
         dataloader = DataLoader(dataset, batch_size=8, shuffle=False,
                             num_workers=8,

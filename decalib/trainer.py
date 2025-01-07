@@ -123,11 +123,11 @@ class Trainer(object):
         ### detail consistency for detail model
         # import ipdb; ipdb.set_trace()
         if self.cfg.loss.shape_consistency or self.cfg.loss.detail_consistency:
-            '''
+            """
             make sure s0, s1 is something to make shape close
             the difference from ||so - s1|| is 
             the later encourage s0, s1 is cloase in l2 space, but not really ensure shape will be close
-            '''
+            """
             new_order = np.array([np.random.permutation(self.K) + i*self.K for i in range(self.batch_size)])
             new_order = new_order.flatten()
             shapecode = codedict['shape']
@@ -310,8 +310,8 @@ class Trainer(object):
         self.deca.train()
 
     def evaluate(self):
-        ''' NOW validation
-        '''
+        """ NOW validation
+        """
         os.makedirs(os.path.join(self.cfg.output_dir, 'NOW_validation'), exist_ok=True)
         savefolder = os.path.join(self.cfg.output_dir, 'NOW_validation', f'step_{self.global_step:08}') 
         os.makedirs(savefolder, exist_ok=True)

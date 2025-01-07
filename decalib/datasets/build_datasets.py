@@ -1,19 +1,12 @@
-import os, sys
-import torch
-from torch.utils.data import Dataset, ConcatDataset
-import torchvision.transforms as transforms
-import numpy as np
-import cv2
-import scipy
-from skimage.io import imread, imsave
-from skimage.transform import estimate_transform, warp, resize, rescale
-from glob import glob
+from torch.utils.data import ConcatDataset
 
-from .vggface import VGGFace2Dataset
-from .ethnicity import EthnicityDataset
-from .aflw2000 import AFLW2000
-from .now import NoWDataset
-from .vox import VoxelDataset
+from decalib.datasets.aflw2000 import AFLW2000
+from decalib.datasets.ethnicity import EthnicityDataset
+from decalib.datasets.now import NoWDataset
+from decalib.datasets.train_datasets import COCODataset, CelebAHQDataset
+from decalib.datasets.vggface import VGGFace2Dataset, VGGFace2HQDataset
+from decalib.datasets.vox import VoxelDataset
+
 
 def build_train(config, is_train=True):
     data_list = []
@@ -32,6 +25,7 @@ def build_train(config, is_train=True):
     dataset = ConcatDataset(data_list)
     
     return dataset
+
 
 def build_val(config, is_train=True):
     data_list = []

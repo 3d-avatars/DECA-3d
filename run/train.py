@@ -1,5 +1,5 @@
-''' training script of DECA
-'''
+""" training script of DECA
+"""
 import os
 import shutil
 import sys

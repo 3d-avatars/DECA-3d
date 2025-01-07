@@ -13,26 +13,32 @@
 # For comments or questions, please email us at deca@tue.mpg.de
 # For commercial licensing contact, please contact ps-license@tuebingen.mpg.de
 
+import pickle
+
+import numpy as np
 import torch
 import torch.nn as nn
-import numpy as np
-import pickle
 import torch.nn.functional as F
 
-from .lbs import lbs, batch_rodrigues, vertices2landmarks, rot_mat_to_euler
+from decalib.models.lbs import lbs, batch_rodrigues, vertices2landmarks, rot_mat_to_euler
+
 
 def to_tensor(array, dtype=torch.float32):
     if 'torch.tensor' not in str(type(array)):
         return torch.tensor(array, dtype=dtype)
+
+
 def to_np(array, dtype=np.float32):
     if 'scipy.sparse' in str(type(array)):
         array = array.todense()
     return np.array(array, dtype=dtype)
 
+
 class Struct(object):
     def __init__(self, **kwargs):
         for key, val in kwargs.items():
             setattr(self, key, val)
+
 
 class FLAME(nn.Module):
     """
@@ -215,6 +221,7 @@ class FLAME(nn.Module):
                                        self.full_lmk_bary_coords.repeat(bz, 1, 1))
         return vertices, landmarks2d, landmarks3d
 
+
 class FLAMETex(nn.Module):
     """
     FLAME texture:
@@ -253,10 +260,10 @@ class FLAMETex(nn.Module):
         self.register_buffer('texture_basis', texture_basis)
 
     def forward(self, texcode):
-        '''
+        """
         texcode: [batchsize, n_tex]
         texture: [bz, 3, 256, 256], range: 0-1
-        '''
+        """
         texture = self.texture_mean + (self.texture_basis*texcode[:,None,:]).sum(-1)
         texture = texture.reshape(texcode.shape[0], 512, 512, 3).permute(0,3,1,2)
         texture = F.interpolate(texture, [256, 256])

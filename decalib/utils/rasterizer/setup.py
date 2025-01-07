@@ -2,9 +2,10 @@
 # python setup.py build_ext -i
 # Ref: https://github.com/pytorch/pytorch/blob/11a40410e755b1fe74efe9eaa635e7ba5712846b/test/cpp_extensions/setup.py#L62
 
+import os
+
 from setuptools import setup
 from torch.utils.cpp_extension import BuildExtension, CUDAExtension
-import os
 
 # USE_NINJA = os.getenv('USE_NINJA') == '1'
 os.environ["CC"] = "gcc-7"

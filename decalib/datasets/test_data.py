@@ -26,7 +26,8 @@ from skimage.io import imread
 from skimage.transform import estimate_transform, warp
 from torch.utils.data import Dataset
 
-from . import detectors
+from decalib.datasets.detectors import FAN
+
 
 class TestData(Dataset):
 
@@ -85,7 +86,7 @@ class TestData(Dataset):
         self.resolution_inp = crop_size
 
         if face_detector == 'fan':
-            self.face_detector = detectors.FAN()
+            self.face_detector = FAN()
         # elif face_detector == 'mtcnn':
         #     self.face_detector = detectors.MTCNN()
         else:

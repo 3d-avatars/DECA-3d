@@ -1,10 +1,10 @@
-'''
+"""
 Default config for DECA
-'''
-from yacs.config import CfgNode as CN
+"""
 import argparse
-import yaml
 import os
+
+from yacs.config import CfgNode as CN
 
 cfg = CN()
 
@@ -119,9 +119,11 @@ def get_cfg_defaults():
     # This is for the "local variable" use pattern
     return cfg.clone()
 
+
 def update_cfg(cfg, cfg_file):
     cfg.merge_from_file(cfg_file)
     return cfg.clone()
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
