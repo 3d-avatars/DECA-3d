@@ -12,88 +12,59 @@
 #
 # For comments or questions, please email us at deca@tue.mpg.de
 # For commercial licensing contact, please contact ps-license@tuebingen.mpg.de
-
+import logging
 import os
 
-import cv2
-import numpy as np
 import torch
-from scipy.io import savemat
+from PIL.ImageFile import ImageFile
 from tqdm import tqdm
 
 from decalib.datasets import test_data
 from decalib.deca import DECA
-from decalib.utils import util
 from decalib.utils.config import cfg as deca_cfg
 
+logger = logging.getLogger(__name__)
 
-def main(
-    input_path: str,
-    save_folder: str,
-    device: str,
-    is_crop: bool,
-    detector: str,
-    rasterizer_type: str,
-    use_texture: bool,
-    extract_texture: bool,
-    save_keypoints: bool,
-    save_depth: bool,
-    save_obj: bool,
-    save_mat: bool,
-):
-    save_folder = save_folder
-    device = device
-    os.makedirs(save_folder, exist_ok=True)
 
-    # load test images 
-    testdata = test_data.TestData(
-        data_path=input_path,
-        is_crop=is_crop,
-        face_detector=detector,
-    )
+class MLRunner:
 
-    # run DECA
-    deca_cfg.model.use_texture = use_texture
-    deca_cfg.rasterizer_type = rasterizer_type
-    deca_cfg.model.extract_texture = extract_texture
-    deca = DECA(config = deca_cfg, device=device)
+    def __init__(
+        self,
+    ):
+        self.device = "cuda"
 
-    for i in tqdm(range(len(testdata))):
-        name = testdata[i]['image_name']
-        images = testdata[i]['image'].to(device)[None,...]
+        # run DECA
+        deca_cfg.model.use_texture = False
+        deca_cfg.model.extract_texture = True
+        deca_cfg.rasterizer_type = "pytorch3d"
 
-        with torch.no_grad():
-            codedict = deca.encode(images)
-            opdict, visdict = deca.decode(codedict) #tensor
+        self.deca = DECA(config=deca_cfg, device=self.device)
 
-        if save_depth or save_keypoints or save_obj or save_mat:
-            os.makedirs(os.path.join(save_folder, name), exist_ok=True)
+    def run(
+        self,
+        input_image: ImageFile,
+        output_path: str
+    ) -> str:
+        logger.info(f"Starting generation")
+        # load test images
+        testdata = test_data.TestData(
+            image=input_image,
+            face_detector="fan",
+        )
+        device = 'cuda'
 
-        # save results
-        if save_depth:
-            depth_image = deca.render.render_depth(opdict['trans_verts']).repeat(1,3,1,1)
-            visdict['depth_images'] = depth_image
+        output_file_path = ""
 
-            cv2.imwrite(
-                os.path.join(save_folder, name, name + '_depth.jpg'),
-                util.tensor2image(depth_image[0])
-            )
+        for i in tqdm(range(len(testdata))):
+            name = testdata[i]["image_name"]
+            images = testdata[i]["image"].to(device)[None, ...]
 
-        if save_keypoints:
-            np.savetxt(
-                os.path.join(save_folder, name, name + '_kpt2d.txt'),
-                opdict['landmarks2d'][0].cpu().numpy()
-            )
-            np.savetxt(
-                os.path.join(save_folder, name, name + '_kpt3d.txt'),
-                opdict['landmarks3d'][0].cpu().numpy()
-            )
+            with torch.no_grad():
+                codedict = self.deca.encode(images)
+                opdict, visdict = self.deca.decode(codedict)  # tensor
 
-        if save_obj:
-            deca.save_obj(os.path.join(save_folder, name, name + '.obj'), opdict)
+            output_file_path = os.path.join(output_path, f"{name}.obj")
+            self.deca.save_obj(output_file_path, opdict)
 
-        if save_mat:
-            opdict = util.dict_tensor2npy(opdict)
-            savemat(os.path.join(save_folder, name, name + '.mat'), opdict)
-
-    print(f'-- please check the results in {save_folder}')
+        logger.info("Finished generation")
+        return output_file_path

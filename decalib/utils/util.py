@@ -24,7 +24,14 @@ import torchvision
 from scipy.ndimage import morphology
 
 
-def upsample_mesh(vertices, normals, faces, displacement_map, texture_map, dense_template):
+def upsample_mesh(
+    vertices,
+    normals,
+    faces,
+    displacement_map,
+    texture_map,
+    dense_template
+):
     """ Credit to Timo
     upsampling coarse mesh (with displacment map)
         vertices: vertices of coarse mesh, [nv, 3]
@@ -60,17 +67,19 @@ def upsample_mesh(vertices, normals, faces, displacement_map, texture_map, dense
     dense_vertices = pixel_3d_points + offsets
     return dense_vertices, dense_colors, dense_faces
 
+
 # borrowed from https://github.com/YadiraF/PRNet/blob/master/utils/write.py
-def write_obj(obj_name,
-              vertices,
-              faces,
-              colors=None,
-              texture=None,
-              uvcoords=None,
-              uvfaces=None,
-              inverse_face_order=False,
-              normal_map=None,
-              ):
+def write_obj(
+    obj_name,
+    vertices,
+    faces,
+    colors=None,
+    texture=None,
+    uvcoords=None,
+    uvfaces=None,
+    inverse_face_order=False,
+    normal_map=None,
+):
     """ Save 3D face model with texture.
     Ref: https://github.com/patrikhuber/eos/blob/bd00155ebae4b1a13b08bf5a991694d682abbada/include/eos/core/Mesh.hpp
     Args:
@@ -107,10 +116,16 @@ def write_obj(obj_name,
         # write vertices
         if colors is None:
             for i in range(vertices.shape[0]):
-                f.write('v {} {} {}\n'.format(vertices[i, 0], vertices[i, 1], vertices[i, 2]))
+                f.write(
+                    'v {} {} {}\n'.format(vertices[i, 0], vertices[i, 1], vertices[i, 2])
+                )
         else:
             for i in range(vertices.shape[0]):
-                f.write('v {} {} {} {} {} {}\n'.format(vertices[i, 0], vertices[i, 1], vertices[i, 2], colors[i, 0], colors[i, 1], colors[i, 2]))
+                f.write(
+                    'v {} {} {} {} {} {}\n'.format(
+                        vertices[i, 0], vertices[i, 1], vertices[i, 2], colors[i, 0], colors[i, 1], colors[i, 2]
+                    )
+                )
 
         # write uv coords
         if texture is None:
@@ -119,19 +134,23 @@ def write_obj(obj_name,
         else:
             for i in range(uvcoords.shape[0]):
                 f.write('vt {} {}\n'.format(uvcoords[i,0], uvcoords[i,1]))
+
             f.write('usemtl %s\n' % material_name)
+
             # write f: ver ind/ uv ind
             uvfaces = uvfaces + 1
             for i in range(faces.shape[0]):
-                f.write('f {}/{} {}/{} {}/{}\n'.format(
-                    #  faces[i, 2], uvfaces[i, 2],
-                    #  faces[i, 1], uvfaces[i, 1],
-                    #  faces[i, 0], uvfaces[i, 0]
-                    faces[i, 0], uvfaces[i, 0],
-                    faces[i, 1], uvfaces[i, 1],
-                    faces[i, 2], uvfaces[i, 2]
+                f.write(
+                    'f {}/{} {}/{} {}/{}\n'.format(
+                        #  faces[i, 2], uvfaces[i, 2],
+                        #  faces[i, 1], uvfaces[i, 1],
+                        #  faces[i, 0], uvfaces[i, 0]
+                        faces[i, 0], uvfaces[i, 0],
+                        faces[i, 1], uvfaces[i, 1],
+                        faces[i, 2], uvfaces[i, 2]
+                    )
                 )
-                )
+
             # write mtl
             with open(mtl_name, 'w') as f:
                 f.write('newmtl %s\n' % material_name)
@@ -142,6 +161,7 @@ def write_obj(obj_name,
                     name, _ = os.path.splitext(obj_name)
                     normal_name = f'{name}_normals.png'
                     f.write(f'disp {normal_name}')
+
                     # out_normal_map = normal_map / (np.linalg.norm(
                     #     normal_map, axis=-1, keepdims=True) + 1e-9)
                     # out_normal_map = (out_normal_map + 1) * 0.5
@@ -151,6 +171,7 @@ def write_obj(obj_name,
                         # (out_normal_map * 255).astype(np.uint8)[:, :, ::-1]
                         normal_map
                     )
+
             cv2.imwrite(texture_name, texture)
 
 
@@ -207,6 +228,7 @@ def load_obj(obj_filename):
         uv_faces
     )
 
+
 # ---------------------------- process/generate vertices, normals, faces
 def generate_triangles(h, w, margin_x=2, margin_y=5, mask = None):
     # quad layout:
@@ -224,6 +246,7 @@ def generate_triangles(h, w, margin_x=2, margin_y=5, mask = None):
     triangles = np.array(triangles)
     triangles = triangles[:,[0,2,1]]
     return triangles
+
 
 # borrowed from https://github.com/daniilidis-group/neural_renderer/blob/master/neural_renderer/vertices_to_faces.py
 def face_vertices(vertices, faces):
@@ -245,7 +268,8 @@ def face_vertices(vertices, faces):
     vertices = vertices.reshape((bs * nv, 3))
     # pytorch only supports long and byte tensors for indexing
     return vertices[faces.long()]
-    
+
+
 def vertex_normals(vertices, faces):
     """
     :param vertices: [batch size, number of vertices, 3]
@@ -280,6 +304,7 @@ def vertex_normals(vertices, faces):
     # pytorch only supports long and byte tensors for indexing
     return normals
 
+
 def batch_orth_proj(X, camera):
     """ orthgraphic projection
         X:  3d vertices, [bz, n_point, 3]
@@ -291,7 +316,8 @@ def batch_orth_proj(X, camera):
     shape = X_trans.shape
     Xn = (camera[:, :, 0:1] * X_trans)
     return Xn
-    
+
+
 # -------------------------------------- image processing
 # borrowed from: https://torchgeometry.readthedocs.io/en/latest/_modules/kornia/filters
 def gaussian(window_size, sigma):
@@ -300,6 +326,7 @@ def gaussian(window_size, sigma):
     gauss = torch.stack(
         [torch.exp(torch.tensor(gauss_fcn(x))) for x in range(window_size)])
     return gauss / gauss.sum()
+
 
 def get_gaussian_kernel(kernel_size: int, sigma: float):
     r"""Function that returns Gaussian filter coefficients.
@@ -328,6 +355,7 @@ def get_gaussian_kernel(kernel_size: int, sigma: float):
                         "Got {}".format(kernel_size))
     window_1d = gaussian(kernel_size, sigma)
     return window_1d
+
 
 def get_gaussian_kernel2d(kernel_size, sigma):
     r"""Function that returns Gaussian filter matrix coefficients.
@@ -370,12 +398,14 @@ def get_gaussian_kernel2d(kernel_size, sigma):
         kernel_x.unsqueeze(-1), kernel_y.unsqueeze(-1).t())
     return kernel_2d
 
+
 def gaussian_blur(x, kernel_size=(3,3), sigma=(0.8,0.8)):
     b, c, h, w = x.shape
     kernel = get_gaussian_kernel2d(kernel_size, sigma).to(x.device).to(x.dtype)
     kernel = kernel.repeat(c, 1, 1, 1)
     padding = [(k - 1) // 2 for k in kernel_size]
     return F.conv2d(x, kernel, padding=padding, stride=1, groups=c)
+
 
 def _compute_binary_kernel(window_size):
     r"""Creates a binary kernel to extract the patches. If the window size
@@ -387,6 +417,7 @@ def _compute_binary_kernel(window_size):
         kernel[i, i] += 1.0
     return kernel.view(window_range, 1, window_size[0], window_size[1])
 
+
 def median_blur(x, kernel_size=(3,3)):
     b, c, h, w = x.shape
     kernel = _compute_binary_kernel(kernel_size).to(x.device).to(x.dtype)
@@ -396,6 +427,7 @@ def median_blur(x, kernel_size=(3,3)):
     features = features.view(b,c,-1,h,w)
     median = torch.median(features, dim=2)[0]
     return median
+
 
 def get_laplacian_kernel2d(kernel_size: int):
     r"""Function that returns Gaussian filter matrix coefficients.
@@ -435,6 +467,7 @@ def get_laplacian_kernel2d(kernel_size: int):
     kernel_2d: torch.Tensor = kernel
     return kernel_2d
 
+
 def laplacian(x):
     # https://torchgeometry.readthedocs.io/en/latest/_modules/kornia/filters/laplacian.html
     b, c, h, w = x.shape
@@ -443,6 +476,7 @@ def laplacian(x):
     kernel = kernel.repeat(c, 1, 1, 1)
     padding = (kernel_size - 1) // 2
     return F.conv2d(x, kernel, padding=padding, stride=1, groups=c)
+
 
 def angle2matrix(angles):
     """ get rotation matrix from three rotation angles(degree). right-handed.
@@ -475,6 +509,7 @@ def angle2matrix(angles):
     R = torch.reshape(R_flattened, (-1, 3, 3)) #[batch_size, 3, 3]
     return R
 
+
 def binary_erosion(tensor, kernel_size=5):
     # tensor: [bz, 1, h, w]. 
     device = tensor.device
@@ -484,6 +519,7 @@ def binary_erosion(tensor, kernel_size=5):
     for i in range(mask.shape[0]):
         new_mask[i,0] = morphology.binary_erosion(mask[i,0], structure)
     return torch.from_numpy(new_mask.astype(np.float32)).to(device)
+
 
 def flip_image(src_image, kps):
     """
@@ -502,6 +538,7 @@ def flip_image(src_image, kps):
         kps[:, :] = kps[kp_map]
 
     return src_image, kps
+
 
 # -------------------------------------- io
 def copy_state_dict(cur_state_dict, pre_state_dict, prefix='', load_name=None):
@@ -524,10 +561,12 @@ def copy_state_dict(cur_state_dict, pre_state_dict, prefix='', load_name=None):
             # print('copy param {} failed'.format(k))
             continue
 
+
 def check_mkdir(path):
     if not os.path.exists(path):
         print('creating %s' % path)
         os.makedirs(path)
+
 
 def check_mkdirlist(pathlist):
     for path in pathlist:
@@ -535,12 +574,14 @@ def check_mkdirlist(pathlist):
             print('creating %s' % path)
             os.makedirs(path)
 
+
 def tensor2image(tensor):
     image = tensor.detach().cpu().numpy()
     image = image*255.
     image = np.maximum(np.minimum(image, 255), 0)
     image = image.transpose(1,2,0)[:,:,[2,1,0]]
     return image.astype(np.uint8).copy()
+
 
 def dict2obj(d):
     # if isinstance(d, list):
@@ -554,10 +595,12 @@ def dict2obj(d):
         o.__dict__[k] = dict2obj(d[k])
     return o
 
+
 class Struct(object):
     def __init__(self, **kwargs):
         for key, val in kwargs.items():
             setattr(self, key, val)
+
 
 # original saved file with DataParallel
 def remove_module(state_dict):
@@ -568,12 +611,14 @@ def remove_module(state_dict):
         new_state_dict[name] = v
     return new_state_dict
 
+
 def dict_tensor2npy(tensor_dict):
     npy_dict = {}
     for key in tensor_dict:
         npy_dict[key] = tensor_dict[key][0].cpu().numpy()
     return npy_dict
-        
+
+
 # ---------------------------------- visualization
 end_list = np.array([17, 22, 27, 42, 48, 31, 36, 68], dtype = np.int32) - 1
 def plot_kpts(image, kpts, color = 'r'):
@@ -606,6 +651,7 @@ def plot_kpts(image, kpts, color = 'r'):
 
     return image
 
+
 def plot_verts(image, kpts, color = 'r'):
     """ Draw 68 key points
     Args: 
@@ -627,6 +673,7 @@ def plot_verts(image, kpts, color = 'r'):
         image = cv2.circle(image,(int(st[0]), int(st[1])), 1, c, 2)  
 
     return image
+
 
 def tensor_vis_landmarks(images, landmarks, gt_landmarks=None, color = 'g', isScale=True):
     # visualize landmarks
@@ -680,6 +727,7 @@ def load_local_mask(image_size=256, mode='bbx'):
         regional_mask = np.array([face, forehead, eye_nose, mouth])
 
     return regional_mask
+
 
 def visualize_grid(visdict, savepath=None, size=224, dim=1, return_gird=True):
     """

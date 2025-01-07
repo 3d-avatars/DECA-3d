@@ -12,98 +12,52 @@
 #
 # For comments or questions, please email us at deca@tue.mpg.de
 # For commercial licensing contact, please contact ps-license@tuebingen.mpg.de
+import logging
 
-import os
-from glob import glob
-from typing import List
-
-import cv2
 import numpy as np
-import scipy
-import scipy.io
 import torch
-from skimage.io import imread
+from PIL.ImageFile import ImageFile
 from skimage.transform import estimate_transform, warp
 from torch.utils.data import Dataset
 
 from decalib.datasets.detectors import FAN
 
+logger = logging.getLogger(__name__)
+
 
 class TestData(Dataset):
 
-    @staticmethod
-    def video2sequence(video_path: str) -> List[str]:
-        video_folder = os.path.splitext(video_path)[0]
-        os.makedirs(video_folder, exist_ok=True)
-
-        video_name = os.path.splitext(os.path.split(video_path)[-1])[0]
-        capture = cv2.VideoCapture(video_path)
-
-        success, image = capture.read()
-        count = 0
-        image_path_list = []
-
-        while success:
-            image_path = os.path.join(video_folder, f'{video_name}_frame_{count:04d}.jpg')
-            cv2.imwrite(image_path, image)
-            success, image = capture.read()
-            count += 1
-            image_path_list.append(image_path)
-        print('video frames are stored in {}'.format(video_folder))
-        return image_path_list
-
     def __init__(
         self, 
-        data_path: str,
-        is_crop: bool = True,
+        image: ImageFile,
         crop_size: int = 224,
         scale: float = 1.25,
-        face_detector: str = 'fan',
+        face_detector: str = "fan",
     ):
-        """
-        data_path: folder, imagepath_list, image path, video path
-        """
-        if isinstance(data_path, list):
-            self.image_path_list = data_path
-
-        elif os.path.isdir(data_path): 
-            self.image_path_list = glob(data_path + '/*.jpg') + glob(data_path + '/*.png') + glob(data_path + '/*.bmp')
-
-        elif os.path.isfile(data_path) and (data_path[-3:] in ['jpg', 'png', 'bmp']):
-            self.image_path_list = [data_path]
-
-        elif os.path.isfile(data_path) and (data_path[-3:] in ['mp4', 'csv', 'vid', 'ebm']):
-            self.image_path_list = TestData.video2sequence(video_path=data_path)
-
-        else:
-            print(f'please check the test path: {data_path}')
-            exit()
-
-        self.image_path_list = sorted(self.image_path_list)
+        self.images_list = [image]
         self.crop_size = crop_size
         self.scale = scale
-        self.is_crop = is_crop
         self.resolution_inp = crop_size
 
-        if face_detector == 'fan':
+        if face_detector == "fan":
             self.face_detector = FAN()
-        # elif face_detector == 'mtcnn':
+        # elif face_detector == "mtcnn":
         #     self.face_detector = detectors.MTCNN()
         else:
-            print(f'please check the detector: {face_detector}')
+            print(f"please check the detector: {face_detector}")
             exit()
 
     def __len__(self):
-        return len(self.image_path_list)
+        return len(self.images_list)
 
-    def bbox2point(self, left, right, top, bottom, type='bbox'):
+    def bbox2point(self, left, right, top, bottom, type="bbox"):
         """
         bbox from detector and landmarks are different
         """
-        if type == 'kpt68':
+        if type == "kpt68":
             old_size = (right - left + bottom - top)/2*1.1
             center = np.array([right - (right - left) / 2.0, bottom - (bottom - top) / 2.0 ])
-        elif type=='bbox':
+        elif type=="bbox":
             old_size = (right - left + bottom - top)/2
             center = np.array([right - (right - left) / 2.0, bottom - (bottom - top) / 2.0  + old_size*0.12])
         else:
@@ -111,56 +65,49 @@ class TestData(Dataset):
         return old_size, center
 
     def __getitem__(self, index):
-        image_path = self.image_path_list[index]
-        image_name = os.path.splitext(os.path.split(image_path)[-1])[0]
-        image = np.array(imread(image_path))
+        image = self.images_list[index]
+        image_name = image.filename
+
+        image = np.array(image)
 
         if len(image.shape) == 2:
             image = image[:,:,None].repeat(1,1,3)
         if len(image.shape) == 3 and image.shape[2] > 3:
             image = image[:,:,:3]
 
-        h, w, _ = image.shape
-        if self.is_crop:
-            # provide kpt as txt file, or mat file (for AFLW2000)
-            kpt_matpath = os.path.splitext(image_path)[0]+'.mat'
-            kpt_txtpath = os.path.splitext(image_path)[0]+'.txt'
+        h, w = image.shape
 
-            if os.path.exists(kpt_matpath):
-                kpt = scipy.io.loadmat(kpt_matpath)['pt3d_68'].T        
-                left = np.min(kpt[:,0]); right = np.max(kpt[:,0])
-                top = np.min(kpt[:,1]); bottom = np.max(kpt[:,1])
-                old_size, center = self.bbox2point(left, right, top, bottom, type='kpt68')
-
-            elif os.path.exists(kpt_txtpath):
-                kpt = np.loadtxt(kpt_txtpath)
-                left = np.min(kpt[:,0]); right = np.max(kpt[:,0]); 
-                top = np.min(kpt[:,1]); bottom = np.max(kpt[:,1])
-                old_size, center = self.bbox2point(left, right, top, bottom, type='kpt68')
-
-            else:
-                bbox, bbox_type = self.face_detector.run(image)
-                if len(bbox) < 4:
-                    print('no face detected! run original image')
-                    left = 0; right = h-1; top=0; bottom=w-1
-                else:
-                    left = bbox[0]; right=bbox[2]
-                    top = bbox[1]; bottom=bbox[3]
-                old_size, center = self.bbox2point(left, right, top, bottom, type=bbox_type)
-
-            size = int(old_size*self.scale)
-            src_pts = np.array([[center[0]-size/2, center[1]-size/2], [center[0] - size/2, center[1]+size/2], [center[0]+size/2, center[1]-size/2]])
+        bbox, bbox_type = self.face_detector.run(image)
+        if len(bbox) < 4:
+            logger.info("No face detected! run original image")
+            left = 0
+            right = h - 1
+            top = 0
+            bottom = w - 1
         else:
-            src_pts = np.array([[0, 0], [0, h-1], [w-1, 0]])
-        
+            left = bbox[0]
+            right = bbox[2]
+            top = bbox[1];
+            bottom = bbox[3]
+        old_size, center = self.bbox2point(left, right, top, bottom, type=bbox_type)
+
+        size = int(old_size * self.scale)
+        src_pts = np.array(
+            [
+                [center[0] - size / 2, center[1] - size / 2],
+                [center[0] - size / 2, center[1] + size / 2],
+                [center[0] + size / 2, center[1] - size / 2]
+            ]
+        )
+
         DST_PTS = np.array(
             [
                 [0,0],
-                [0,self.resolution_inp - 1],
+                [0, self.resolution_inp - 1],
                 [self.resolution_inp - 1, 0]
             ]
         )
-        tform = estimate_transform('similarity', src_pts, DST_PTS)
+        tform = estimate_transform("similarity", src_pts, DST_PTS)
         
         image = image/255
 
@@ -168,8 +115,8 @@ class TestData(Dataset):
         dst_image = dst_image.transpose(2,0,1)
 
         return {
-            'image': torch.tensor(dst_image).float(),
-            'image_name': image_name,
-            'tform': torch.tensor(tform.params).float(),
-            'original_image': torch.tensor(image.transpose(2,0,1)).float(),
+            "image": torch.tensor(dst_image).float(),
+            "image_name": image_name,
+            "tform": torch.tensor(tform.params).float(),
+            "original_image": torch.tensor(image.transpose(2,0,1)).float(),
         }

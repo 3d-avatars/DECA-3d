@@ -294,21 +294,27 @@ class DECA(nn.Module):
         uvfaces = self.render.uvfaces[0].cpu().numpy()
         # save coarse mesh, with texture and normal map
         normal_map = util.tensor2image(opdict['uv_detail_normals'][i]*0.5 + 0.5)
-        util.write_obj(filename, vertices, faces, 
-                        texture=texture, 
-                        uvcoords=uvcoords, 
-                        uvfaces=uvfaces, 
-                        normal_map=normal_map)
+        util.write_obj(
+            filename,
+            vertices,
+            faces,
+            texture=texture,
+            uvcoords=uvcoords,
+            uvfaces=uvfaces,
+            normal_map=normal_map
+        )
         # upsample mesh, save detailed mesh
         texture = texture[:,:,[2,1,0]]
         normals = opdict['normals'][i].cpu().numpy()
         displacement_map = opdict['displacement_map'][i].cpu().numpy().squeeze()
         dense_vertices, dense_colors, dense_faces = util.upsample_mesh(vertices, normals, faces, displacement_map, texture, self.dense_template)
-        util.write_obj(filename.replace('.obj', '_detail.obj'), 
-                        dense_vertices, 
-                        dense_faces,
-                        colors = dense_colors,
-                        inverse_face_order=True)
+        util.write_obj(
+            filename.replace('.obj', '_detail.obj'),
+            dense_vertices,
+            dense_faces,
+            colors = dense_colors,
+            inverse_face_order=True
+        )
     
     def run(self, imagepath, iscrop=True):
         """ An api for running deca given an image path

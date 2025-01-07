@@ -23,6 +23,8 @@ import torch
 from scipy.io import savemat
 from tqdm import tqdm
 
+from decalib.datasets import test_data_cmd
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from decalib.deca import DECA
 from decalib.utils import util
@@ -37,7 +39,7 @@ def main(args):
     os.makedirs(savefolder, exist_ok=True)
 
     # load test images
-    testdata = datasets.TestData(args.inputpath, is_crop=args.is_crop, face_detector=args.detector, sample_step=args.sample_step)
+    testdata = test_data_cmd.TestData(args.inputpath, is_crop=args.is_crop, face_detector=args.detector)
 
     # run DECA
     deca_cfg.model.use_texture = args.useTex
