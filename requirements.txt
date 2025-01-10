@@ -1,3 +1,7 @@
+torch==2.1.0+cu121
+torch_scatter==2.1.2
+torchaudio==2.1.0+cu121
+torchvision==0.16.0+cu121
 accelerate==0.29.2
 aiofiles==23.2.1
 aiohappyeyeballs==2.4.4
@@ -81,7 +85,7 @@ ort-nightly-gpu==1.15.0.dev20230502003
 packaging==24.2
 pandas==2.2.3
 peft==0.10.0
-pillow==10.3.0
+pillow==10.4.0
 platformdirs==4.3.6
 pooch==1.8.2
 portalocker==3.1.1
@@ -127,10 +131,6 @@ termcolor==2.5.0
 tifffile==2024.12.12
 tokenizers==0.15.2
 tomlkit==0.12.0
-torch==2.1.0+cu121
-torch_scatter==2.1.2
-torchaudio==2.1.0+cu121
-torchvision==0.16.0+cu121
 tqdm==4.64.1
 transformers==4.39.3
 trimesh==4.3.0
