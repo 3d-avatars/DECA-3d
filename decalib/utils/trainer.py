@@ -23,10 +23,10 @@ from loguru import logger
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from decalib.datasets import build_datasets
-from decalib.utils import lossfunc
-from decalib.utils import util
-from decalib.utils.config import cfg
+import lossfunc
+import util
+from .config import cfg
+from ..datasets import build_datasets
 
 torch.backends.cudnn.benchmark = True
 

@@ -18,10 +18,11 @@ import os
 import torch
 from PIL.ImageFile import ImageFile
 from tqdm import tqdm
+import trimesh
 
-from decalib.datasets import test_data
-from decalib.deca import DECA
-from decalib.utils.config import cfg as deca_cfg
+from ..decalib.datasets import test_data
+from ..decalib.deca import DECA
+from ..decalib.utils.config import cfg as deca_cfg
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +44,7 @@ class MLRunner:
     def run(
         self,
         input_image: ImageFile,
-        output_path: str
+        output_file_path: str
     ) -> str:
         logger.info(f"Starting generation")
         # load test images
@@ -53,18 +54,16 @@ class MLRunner:
         )
         device = 'cuda'
 
-        output_file_path = ""
-
         for i in tqdm(range(len(testdata))):
-            name = testdata[i]["image_name"]
             images = testdata[i]["image"].to(device)[None, ...]
 
             with torch.no_grad():
                 codedict = self.deca.encode(images)
                 opdict, visdict = self.deca.decode(codedict)  # tensor
 
-            output_file_path = os.path.join(output_path, f"{name}.obj")
             self.deca.save_obj(output_file_path, opdict)
+            mesh = trimesh.load_mesh(output_file_path + '.obj')
+            mesh.export(output_file_path + '.glb')
 
         logger.info("Finished generation")
         return output_file_path

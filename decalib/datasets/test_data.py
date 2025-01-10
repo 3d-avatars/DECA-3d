@@ -20,7 +20,7 @@ from PIL.ImageFile import ImageFile
 from skimage.transform import estimate_transform, warp
 from torch.utils.data import Dataset
 
-from decalib.datasets.detectors import FAN
+from .detectors import FAN
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +75,7 @@ class TestData(Dataset):
         if len(image.shape) == 3 and image.shape[2] > 3:
             image = image[:,:,:3]
 
-        h, w = image.shape
+        h, w, _ = image.shape
 
         bbox, bbox_type = self.face_detector.run(image)
         if len(bbox) < 4:

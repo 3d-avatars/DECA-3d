@@ -1,11 +1,11 @@
 from torch.utils.data import ConcatDataset
 
-from decalib.datasets.aflw2000 import AFLW2000
-from decalib.datasets.ethnicity import EthnicityDataset
-from decalib.datasets.now import NoWDataset
-from decalib.datasets.train_datasets import COCODataset, CelebAHQDataset
-from decalib.datasets.vggface import VGGFace2Dataset, VGGFace2HQDataset
-from decalib.datasets.vox import VoxelDataset
+from .aflw2000 import AFLW2000
+from .ethnicity import EthnicityDataset
+from .now import NoWDataset
+from .train_datasets import COCODataset, CelebAHQDataset
+from .vggface import VGGFace2Dataset, VGGFace2HQDataset
+from .vox import VoxelDataset
 
 
 def build_train(config, is_train=True):

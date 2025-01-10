@@ -22,15 +22,15 @@ import torch.nn.functional as F
 import torchvision
 from skimage.io import imread
 
-from decalib.datasets import test_data
-from decalib.models.FLAME import FLAME, FLAMETex
-from decalib.models.decoders import Generator
-from decalib.models.encoders import ResnetEncoder
-from decalib.utils import util
-from decalib.utils.config import cfg
-from decalib.utils.renderer import SRenderY, set_rasterizer
-from decalib.utils.rotation_converter import batch_euler2axis
-from decalib.utils.tensor_cropper import transform_points
+from .datasets import test_data
+from .models.FLAME import FLAME, FLAMETex
+from .models.decoders import Generator
+from .models.encoders import ResnetEncoder
+from .utils import util
+from .utils.config import cfg
+from .utils.renderer import SRenderY, set_rasterizer
+from .utils.rotation_converter import batch_euler2axis
+from .utils.tensor_cropper import transform_points
 
 torch.backends.cudnn.benchmark = True
 

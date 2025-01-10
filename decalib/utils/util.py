@@ -249,7 +249,7 @@ def generate_triangles(h, w, margin_x=2, margin_y=5, mask = None):
 
 
 # borrowed from https://github.com/daniilidis-group/neural_renderer/blob/master/neural_renderer/vertices_to_faces.py
-def face_vertices(vertices, faces):
+def get_face_vertices(vertices, faces):
     """ 
     :param vertices: [batch size, number of vertices, 3]
     :param faces: [batch size, number of faces, 3]

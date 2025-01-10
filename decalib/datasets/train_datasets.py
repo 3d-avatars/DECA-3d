@@ -8,11 +8,11 @@ from skimage.io import imread
 from skimage.transform import estimate_transform, warp, rescale
 from torch.utils.data import Dataset, DataLoader, ConcatDataset
 
-from decalib.datasets.aflw2000 import AFLW2000
-from decalib.datasets.detectors import FAN, MTCNN
-from decalib.datasets.ethnicity import EthnicityDataset
-from decalib.datasets.now import NoWDataset
-from decalib.datasets.vggface import VGGFace2Dataset, VGGFace2HQDataset
+from .aflw2000 import AFLW2000
+from .detectors import FAN, MTCNN
+from .ethnicity import EthnicityDataset
+from .now import NoWDataset
+from .vggface import VGGFace2Dataset, VGGFace2HQDataset
 
 
 def build_dataloader(config, is_train=True):
