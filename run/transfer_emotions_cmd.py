@@ -89,7 +89,7 @@ def main(args):
             for vis_name in ['inputs', 'rendered_images', 'albedo_images', 'shape_images', 'shape_detail_images']:
                 if vis_name not in visdict.keys():
                     continue
-                image  =util.tensor2image(visdict[vis_name][0])
+                image = util.tensor2image(visdict[vis_name][0])
                 cv2.imwrite(os.path.join(savefolder, name, save_type, name + '_' + vis_name +'.jpg'), util.tensor2image(visdict[vis_name][0]))
     print(f'-- please check the results in {savefolder}')
 

@@ -13,12 +13,12 @@
 # For comments or questions, please email us at deca@tue.mpg.de
 # For commercial licensing contact, please contact ps-license@tuebingen.mpg.de
 import logging
-
 import numpy as np
 import torch
 from PIL.ImageFile import ImageFile
 from skimage.transform import estimate_transform, warp
 from torch.utils.data import Dataset
+from typing import List
 
 from .detectors import FAN
 
@@ -29,12 +29,12 @@ class TestData(Dataset):
 
     def __init__(
         self, 
-        image: ImageFile,
+        images: List[ImageFile],
         crop_size: int = 224,
         scale: float = 1.25,
         face_detector: str = "fan",
     ):
-        self.images_list = [image]
+        self.images_list = images
         self.crop_size = crop_size
         self.scale = scale
         self.resolution_inp = crop_size
