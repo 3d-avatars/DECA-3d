@@ -29,9 +29,7 @@ logger = logging.getLogger(__name__)
 
 class DecaRunner:
 
-    def __init__(
-        self,
-    ):
+    def __init__(self):
         self.device = "cuda"
 
         deca_cfg.model.use_texture = False
@@ -42,7 +40,7 @@ class DecaRunner:
 
     def reconstruct(
         self,
-        input_images: List[ImageFile],
+        input_images: List[np.ndarray],
         output_file_path: str
     ) -> str:
         logger.info("Starting reconstruction")
@@ -65,7 +63,7 @@ class DecaRunner:
 
     def transfer_emotions(
         self,
-        input_images: List[ImageFile],
+        input_images: List[np.ndarray],
         emotions_images: List[ImageFile],
         output_files_path: str,
     ) -> List[str]:

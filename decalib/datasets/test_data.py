@@ -29,12 +29,19 @@ class TestData(Dataset):
 
     def __init__(
         self, 
-        images: List[ImageFile],
+        images: List[ImageFile] | List[np.ndarray],
         crop_size: int = 224,
         scale: float = 1.25,
         face_detector: str = "fan",
     ):
-        self.images_list = images
+        if isinstance(images, List[ImageFile]):
+            self.images_list = list(map(
+                lambda image: np.array(image),
+                images
+            ))
+        else:
+            self.images_list = images
+
         self.crop_size = crop_size
         self.scale = scale
         self.resolution_inp = crop_size
@@ -67,8 +74,6 @@ class TestData(Dataset):
     def __getitem__(self, index):
         image = self.images_list[index]
         image_name = image.filename
-
-        image = np.array(image)
 
         if len(image.shape) == 2:
             image = image[:,:,None].repeat(1,1,3)
