@@ -13,6 +13,7 @@
 # For comments or questions, please email us at deca@tue.mpg.de
 # For commercial licensing contact, please contact ps-license@tuebingen.mpg.de
 import logging
+import numpy as np
 import os
 import torch
 import trimesh
