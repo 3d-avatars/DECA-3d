@@ -46,7 +46,7 @@ class DecaRunner:
     ) -> str:
         logger.info("Starting reconstruction")
         # load test images
-        dataset = test_data.TestData(images=[input_images])
+        dataset = test_data.TestData(images=input_images)
 
         for i in tqdm(range(len(dataset))):
             image = dataset[i]["image"].to(self.device)[None, ...]
@@ -66,6 +66,7 @@ class DecaRunner:
         self,
         input_images: List[np.ndarray],
         emotions_images: List[ImageFile],
+        emotions_images_filenames: List[str],
         output_files_path: str,
     ) -> List[str]:
         logger.info("Starting transferring emotions")
@@ -75,35 +76,34 @@ class DecaRunner:
 
         output_files_paths = []
 
-        for i in tqdm(len(input_dataset)):
+        for i in tqdm(range(len(input_dataset))):
             logger.info("Starting id reconstruction")
             image = input_dataset[i]["image"].to(self.device)[None, ...]
 
             with torch.no_grad():
-                id_codedict = deca.encode(image)
-                id_opdict, _ = deca.decode(id_codedict)
+                id_codedict = self.deca.encode(image)
+                id_opdict, _ = self.deca.decode(id_codedict)
 
-            for j in tqdm(len(emotions_dataset)):
-                emotions_file_type_index = emotions_images[j].filename.rfind(".")
-                emotions_file_name = emotions_images[j].filename[:emotions_file_type_index]
+            for j in tqdm(range(len(emotions_dataset))):
+                emotions_file_name = emotions_images_filenames[j]
 
                 logger.info(f"Starting transferring emotion from image {emotions_file_name}")
                 emotion_image = emotions_dataset[j]["image"].to(self.device)[None, ...]
 
                 with torch.no_grad():
-                    emotion_codedict = deca.encode(emotion_image)
+                    emotion_codedict = self.deca.encode(emotion_image)
 
                 id_codedict["pose"][:, 3:] = emotion_codedict["pose"][:, 3:]
                 id_codedict["exp"] = emotion_codedict["exp"]
 
-                transfer_opdict, _ = deca.decode(id_codedict)
+                transfer_opdict, _ = self.deca.decode(id_codedict)
                 transfer_opdict["uv_texture_gt"] = id_opdict["uv_texture_gt"]
 
                 output_file_path = output_files_path.format(emotions_file_name)
 
-                deca.save_obj(output_file_path, transfer_opdict)
+                self.deca.save_obj(output_file_path, transfer_opdict)
                 output_files_paths.append(output_file_path)
-                logger.info(f"Finished transferring emotion from image {emotions_file_name}")
+                logger.info(f"Finished transferring emotion from image {emotions_file_name}, file path {output_file_path}")
 
         logger.info("Finished transferring emotions")
         return output_files_paths

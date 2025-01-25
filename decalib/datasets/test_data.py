@@ -34,7 +34,9 @@ class TestData(Dataset):
         scale: float = 1.25,
         face_detector: str = "fan",
     ):
-        if isinstance(images, List[ImageFile]):
+        if len(images) == 0:
+            self.images_list = np.array()
+        elif isinstance(images[0], ImageFile):
             self.images_list = list(map(
                 lambda image: np.array(image),
                 images
@@ -73,7 +75,6 @@ class TestData(Dataset):
 
     def __getitem__(self, index):
         image = self.images_list[index]
-        image_name = image.filename
 
         if len(image.shape) == 2:
             image = image[:,:,None].repeat(1,1,3)
@@ -121,7 +122,6 @@ class TestData(Dataset):
 
         return {
             "image": torch.tensor(dst_image).float(),
-            "image_name": image_name,
             "tform": torch.tensor(tform.params).float(),
             "original_image": torch.tensor(image.transpose(2,0,1)).float(),
         }
