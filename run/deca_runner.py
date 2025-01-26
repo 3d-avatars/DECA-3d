@@ -44,7 +44,7 @@ class DecaRunner:
         input_images: List[np.ndarray],
         output_file_path: str
     ) -> str:
-        logger.info("Starting reconstruction")
+        logger.info("[DECA Runner] Starting reconstruction")
         # load test images
         dataset = test_data.TestData(images=input_images)
 
@@ -59,7 +59,7 @@ class DecaRunner:
             # mesh = trimesh.load_mesh(output_file_path + '.obj')
             # mesh.export(output_file_path + '.glb')
 
-        logger.info("Finished reconstruction")
+        logger.info("[DECA Runner] Finished reconstruction")
         return output_file_path
 
     def transfer_emotions(
@@ -69,7 +69,7 @@ class DecaRunner:
         emotions_images_filenames: List[str],
         output_files_path: str,
     ) -> List[str]:
-        logger.info("Starting transferring emotions")
+        logger.info("[DECA Runner] Starting transferring emotions")
 
         input_dataset = test_data.TestData(images=input_images)
         emotions_dataset = test_data.TestData(images=emotions_images)
@@ -77,7 +77,7 @@ class DecaRunner:
         output_files_paths = []
 
         for i in tqdm(range(len(input_dataset))):
-            logger.info("Starting id reconstruction")
+            logger.info("[DECA Runner] Starting id reconstruction")
             image = input_dataset[i]["image"].to(self.device)[None, ...]
 
             with torch.no_grad():
@@ -87,7 +87,7 @@ class DecaRunner:
             for j in tqdm(range(len(emotions_dataset))):
                 emotions_file_name = emotions_images_filenames[j]
 
-                logger.info(f"Starting transferring emotion from image {emotions_file_name}")
+                logger.info(f"[DECA Runner] Starting transferring emotion from image {emotions_file_name}")
                 emotion_image = emotions_dataset[j]["image"].to(self.device)[None, ...]
 
                 with torch.no_grad():
@@ -103,7 +103,7 @@ class DecaRunner:
 
                 self.deca.save_obj(output_file_path, transfer_opdict)
                 output_files_paths.append(output_file_path)
-                logger.info(f"Finished transferring emotion from image {emotions_file_name}, file path {output_file_path}")
+                logger.info(f"[DECA Runner] Finished transferring emotion from image {emotions_file_name}, file path {output_file_path}")
 
-        logger.info("Finished transferring emotions")
+        logger.info("[DECA Runner] Finished transferring emotions")
         return output_files_paths
