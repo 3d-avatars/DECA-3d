@@ -20,6 +20,7 @@ import trimesh
 from PIL.ImageFile import ImageFile
 from tqdm import tqdm
 from typing import List
+import cv2
 
 from ..decalib.datasets import test_data
 from ..decalib.deca import DECA
@@ -53,9 +54,16 @@ class DecaRunner:
 
             with torch.no_grad():
                 codedict = self.deca.encode(image)
-                opdict, _ = self.deca.decode(codedict)  # tensor
+                opdict, visdict = self.deca.decode(codedict)  # tensor
 
             self.deca.save_obj(output_file_path, opdict)
+
+            vis_path = output_file_path[: output_file_path.rfind(".obj")] + "_vis.jpg"
+            cv2.imwrite(
+                vis_path,
+                self.deca.visualize(visdict),
+            )
+
             # mesh = trimesh.load_mesh(output_file_path + '.obj')
             # mesh.export(output_file_path + '.glb')
 
@@ -82,7 +90,9 @@ class DecaRunner:
 
             with torch.no_grad():
                 id_codedict = self.deca.encode(image)
-                id_opdict, _ = self.deca.decode(id_codedict)
+                id_opdict, id_visdict = self.deca.decode(id_codedict)
+
+            id_visdict = { x : id_visdict[x] for x in ["inputs", "shape_detail_images"] }
 
             for j in tqdm(range(len(emotions_dataset))):
                 emotions_file_name = emotions_images_filenames[j]
@@ -96,13 +106,22 @@ class DecaRunner:
                 id_codedict["pose"][:, 3:] = emotion_codedict["pose"][:, 3:]
                 id_codedict["exp"] = emotion_codedict["exp"]
 
-                transfer_opdict, _ = self.deca.decode(id_codedict)
+                transfer_opdict, emotion_visdict = self.deca.decode(id_codedict)
                 transfer_opdict["uv_texture_gt"] = id_opdict["uv_texture_gt"]
 
                 output_file_path = output_files_path.format(emotions_file_name)
 
                 self.deca.save_obj(output_file_path, transfer_opdict)
                 output_files_paths.append(output_file_path)
+
+                id_visdict["transferred_shape"] = emotion_visdict["shape_detail_images"]
+
+                vis_file_path = output_file_path[: output_file_path.rfind(".obj")] + "_vis.jpg"
+                cv2.imwrite(
+                    vis_file_path,
+                    self.deca.visualize(id_visdict),
+                )
+
                 logger.info(f"[DECA Runner] Finished transferring emotion from image {emotions_file_name}, file path {output_file_path}")
 
         logger.info("[DECA Runner] Finished transferring emotions")
