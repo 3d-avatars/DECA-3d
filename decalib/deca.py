@@ -13,27 +13,27 @@
 # For comments or questions, please email us at deca@tue.mpg.de
 # For commercial licensing contact, please contact ps-license@tuebingen.mpg.de
 
-import os, sys
-import torch
-import torchvision
-import torch.nn.functional as F
-import torch.nn as nn
+import os
 
 import numpy as np
-from time import time
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torchvision
 from skimage.io import imread
-import cv2
-import pickle
-from .utils.renderer import SRenderY, set_rasterizer
-from .models.encoders import ResnetEncoder
+
+from .datasets import test_data
 from .models.FLAME import FLAME, FLAMETex
 from .models.decoders import Generator
+from .models.encoders import ResnetEncoder
 from .utils import util
+from .utils.config import cfg
+from .utils.renderer import SRenderY, set_rasterizer
 from .utils.rotation_converter import batch_euler2axis
 from .utils.tensor_cropper import transform_points
-from .datasets import datasets
-from .utils.config import cfg
+
 torch.backends.cudnn.benchmark = True
+
 
 class DECA(nn.Module):
     def __init__(self, config=None, device='cuda'):
@@ -79,7 +79,7 @@ class DECA(nn.Module):
         self.E_detail = ResnetEncoder(outsize=self.n_detail).to(self.device)
         # decoders
         self.flame = FLAME(model_cfg).to(self.device)
-        if model_cfg.use_tex:
+        if model_cfg.use_texture:
             self.flametex = FLAMETex(model_cfg).to(self.device)
         self.D_detail = Generator(latent_dim=self.n_detail+self.n_cond, out_channels=1, out_scale=model_cfg.max_z, sample_mode = 'bilinear').to(self.device)
         # resume model
@@ -100,9 +100,10 @@ class DECA(nn.Module):
         self.D_detail.eval()
 
     def decompose_code(self, code, num_dict):
-        ''' Convert a flattened parameter vector to a dictionary of parameters
+        """
+        Convert a flattened parameter vector to a dictionary of parameters
         code_dict.keys() = ['shape', 'tex', 'exp', 'pose', 'cam', 'light']
-        '''
+        """
         code_dict = {}
         start = 0
         for key in num_dict:
@@ -114,8 +115,8 @@ class DECA(nn.Module):
         return code_dict
 
     def displacement2normal(self, uv_z, coarse_verts, coarse_normals):
-        ''' Convert displacement map into detail normal map
-        '''
+        """ Convert displacement map into detail normal map
+        """
         batch_size = uv_z.shape[0]
         uv_coarse_vertices = self.render.world2uv(coarse_verts).detach()
         uv_coarse_normals = self.render.world2uv(coarse_normals).detach()
@@ -129,8 +130,8 @@ class DECA(nn.Module):
         return uv_detail_normals
 
     def visofp(self, normals):
-        ''' visibility of keypoints, based on the normal direction
-        '''
+        """ visibility of keypoints, based on the normal direction
+        """
         normals68 = self.flame.seletec_3d68(normals)
         vis68 = (normals68[:,:,2:] < 0.1).float()
         return vis68
@@ -164,7 +165,7 @@ class DECA(nn.Module):
         
         ## decode
         verts, landmarks2d, landmarks3d = self.flame(shape_params=codedict['shape'], expression_params=codedict['exp'], pose_params=codedict['pose'])
-        if self.cfg.model.use_tex:
+        if self.cfg.model.use_texture:
             albedo = self.flametex(codedict['tex'])
         else:
             albedo = torch.zeros([batch_size, 3, self.uv_size, self.uv_size], device=images.device) 
@@ -205,7 +206,7 @@ class DECA(nn.Module):
             opdict['alpha_images'] = ops['alpha_images']
             opdict['normal_images'] = ops['normal_images']
         
-        if self.cfg.model.use_tex:
+        if self.cfg.model.use_texture:
             opdict['albedo'] = albedo
             
         if use_detail:
@@ -236,9 +237,9 @@ class DECA(nn.Module):
             ## TODO: current resolution 256x256, support higher resolution, and add visibility
             uv_pverts = self.render.world2uv(trans_verts)
             uv_gt = F.grid_sample(images, uv_pverts.permute(0,2,3,1)[:,:,:,:2], mode='bilinear', align_corners=False)
-            if self.cfg.model.use_tex:
+            if self.cfg.model.use_texture:
                 ## TODO: poisson blending should give better-looking results
-                if self.cfg.model.extract_tex:
+                if self.cfg.model.extract_texture:
                     uv_texture_gt = uv_gt[:,:3,:,:]*self.uv_face_eye_mask + (uv_texture[:,:3,:,:]*(1-self.uv_face_eye_mask))
                 else:
                     uv_texture_gt = uv_texture[:,:3,:,:]
@@ -253,7 +254,7 @@ class DECA(nn.Module):
                 'shape_images': shape_images,
                 'shape_detail_images': shape_detail_images
             }
-            if self.cfg.model.use_tex:
+            if self.cfg.model.use_texture:
                 visdict['rendered_images'] = ops['images']
 
             return opdict, visdict
@@ -262,10 +263,10 @@ class DECA(nn.Module):
             return opdict
 
     def visualize(self, visdict, size=224, dim=2):
-        '''
+        """
         image range should be [0,1]
         dim: 2 for horizontal. 1 for vertical
-        '''
+        """
         assert dim == 1 or dim==2
         grids = {}
         for key in visdict:
@@ -281,10 +282,10 @@ class DECA(nn.Module):
         return grid_image
     
     def save_obj(self, filename, opdict):
-        '''
+        """
         vertices: [nv, 3], tensor
         texture: [3, h, w], tensor
-        '''
+        """
         i = 0
         vertices = opdict['verts'][i].cpu().numpy()
         faces = self.render.faces[0].cpu().numpy()
@@ -293,26 +294,32 @@ class DECA(nn.Module):
         uvfaces = self.render.uvfaces[0].cpu().numpy()
         # save coarse mesh, with texture and normal map
         normal_map = util.tensor2image(opdict['uv_detail_normals'][i]*0.5 + 0.5)
-        util.write_obj(filename, vertices, faces, 
-                        texture=texture, 
-                        uvcoords=uvcoords, 
-                        uvfaces=uvfaces, 
-                        normal_map=normal_map)
+        util.write_obj(
+            filename,
+            vertices,
+            faces,
+            texture=texture,
+            uvcoords=uvcoords,
+            uvfaces=uvfaces,
+            normal_map=normal_map
+        )
         # upsample mesh, save detailed mesh
-        texture = texture[:,:,[2,1,0]]
-        normals = opdict['normals'][i].cpu().numpy()
-        displacement_map = opdict['displacement_map'][i].cpu().numpy().squeeze()
-        dense_vertices, dense_colors, dense_faces = util.upsample_mesh(vertices, normals, faces, displacement_map, texture, self.dense_template)
-        util.write_obj(filename.replace('.obj', '_detail.obj'), 
-                        dense_vertices, 
-                        dense_faces,
-                        colors = dense_colors,
-                        inverse_face_order=True)
+        # texture = texture[:,:,[2,1,0]]
+        # normals = opdict['normals'][i].cpu().numpy()
+        # displacement_map = opdict['displacement_map'][i].cpu().numpy().squeeze()
+        # dense_vertices, dense_colors, dense_faces = util.upsample_mesh(vertices, normals, faces, displacement_map, texture, self.dense_template)
+        # util.write_obj(
+        #     filename.replace('.obj', '_detail.obj'),
+        #     dense_vertices,
+        #     dense_faces,
+        #     colors = dense_colors,
+        #     inverse_face_order=True
+        # )
     
     def run(self, imagepath, iscrop=True):
-        ''' An api for running deca given an image path
-        '''
-        testdata = datasets.TestData(imagepath)
+        """ An api for running deca given an image path
+        """
+        testdata = test_data.TestData(imagepath)
         images = testdata[0]['image'].to(self.device)[None,...]
         codedict = self.encode(images)
         opdict, visdict = self.decode(codedict)

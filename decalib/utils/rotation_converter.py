@@ -1,6 +1,6 @@
 import torch
 
-''' Rotation Converter
+""" Rotation Converter
 Repre: euler angle(3), angle axis(3), rotation matrix(3x3), quaternion(4)
 ref: https://kornia.readthedocs.io/en/v0.1.2/_modules/torchgeometry/core/conversions.html#
 "pi",
@@ -17,8 +17,9 @@ euler2quat_conversion_sanity_batch
 ref: smplx/lbs
 batch_rodrigues: axis angle -> matrix
 # 
-'''
+"""
 pi = torch.Tensor([3.14159265358979323846])
+
 
 def rad2deg(tensor):
     """Function that converts angles from radians to degrees.
@@ -40,6 +41,7 @@ def rad2deg(tensor):
                         .format(type(tensor)))
 
     return 180. * tensor / pi.to(tensor.device).type(tensor.dtype)
+
 
 def deg2rad(tensor):
     """Function that converts angles from degrees to radians.
@@ -63,6 +65,7 @@ def deg2rad(tensor):
 
     return tensor * pi.to(tensor.device).type(tensor.dtype) / 180.
 
+
 ######### to quaternion
 def euler_to_quaternion(r):
     x = r[..., 0]
@@ -84,6 +87,7 @@ def euler_to_quaternion(r):
     quaternion[..., 2] += cx*cz*sy - sx*cy*sz
     quaternion[..., 3] += cx*cy*sz + sx*cz*sy
     return quaternion
+
 
 def rotation_matrix_to_quaternion(rotation_matrix, eps=1e-6):
     """Convert 3x4 rotation matrix to 4d quaternion vector
@@ -175,6 +179,7 @@ def rotation_matrix_to_quaternion(rotation_matrix, eps=1e-6):
 #     quat = torch.cat([v_cos, v_sin * normalized], dim=1)
 #     return quat
 
+
 def angle_axis_to_quaternion(angle_axis: torch.Tensor) -> torch.Tensor:
     """Convert an angle axis to a quaternion.
 
@@ -224,6 +229,7 @@ def angle_axis_to_quaternion(angle_axis: torch.Tensor) -> torch.Tensor:
     quaternion[..., 2:3] += a2 * k
     return torch.cat([w, quaternion], dim=-1)
 
+
 #### quaternion to
 def quaternion_to_rotation_matrix(quat):
     """Convert quaternion coefficients to rotation matrix.
@@ -246,6 +252,7 @@ def quaternion_to_rotation_matrix(quat):
                           2 * wz + 2 * xy, w2 - x2 + y2 - z2, 2 * yz - 2 * wx,
                           2 * xz - 2 * wy, 2 * wx + 2 * yz, w2 - x2 - y2 + z2], dim=1).view(B, 3, 3)
     return rotMat
+
 
 def quaternion_to_angle_axis(quaternion: torch.Tensor):
     """Convert quaternion vector to angle axis of rotation. TODO: CORRECT
@@ -296,12 +303,15 @@ def quaternion_to_angle_axis(quaternion: torch.Tensor):
     angle_axis[..., 2] += q3 * k
     return angle_axis
 
+
 #### batch converter
 def batch_euler2axis(r):
     return quaternion_to_angle_axis(euler_to_quaternion(r))
 
+
 def batch_euler2matrix(r):
     return quaternion_to_rotation_matrix(euler_to_quaternion(r))
+
 
 def batch_matrix2euler(rot_mats):
     # Calculates rotation matrix to euler angles
@@ -312,8 +322,10 @@ def batch_matrix2euler(rot_mats):
                     rot_mats[:, 1, 0] * rot_mats[:, 1, 0])
     return torch.atan2(-rot_mats[:, 2, 0], sy)
 
+
 def batch_matrix2axis(rot_mats):
     return quaternion_to_angle_axis(rotation_matrix_to_quaternion(rot_mats))
+
 
 def batch_axis2matrix(theta):
     # angle axis to rotation matrix
@@ -322,25 +334,28 @@ def batch_axis2matrix(theta):
     # batch_rodrigues
     return quaternion_to_rotation_matrix(angle_axis_to_quaternion(theta))
 
+
 def batch_axis2euler(theta):
     return batch_matrix2euler(batch_axis2matrix(theta))
+
 
 def batch_axis2euler(r):
     return rot_mat_to_euler(batch_rodrigues(r))
 
 
 def batch_orth_proj(X, camera):
-    '''
+    """
         X is N x num_pquaternion_to_angle_axisoints x 3
-    '''
+    """
     camera = camera.clone().view(-1, 1, 3)
     X_trans = X[:, :, :2] + camera[:, :, 1:]
     X_trans = torch.cat([X_trans, X[:,:,2:]], 2)
     Xn = (camera[:, :, 0:1] * X_trans)
     return Xn
 
+
 def batch_rodrigues(rot_vecs, epsilon=1e-8, dtype=torch.float32):
-    '''  same as batch_matrix2axis
+    """  same as batch_matrix2axis
     Calculates the rotation matrices for a batch of rotation vectors
         Parameters
         ----------
@@ -350,7 +365,7 @@ def batch_rodrigues(rot_vecs, epsilon=1e-8, dtype=torch.float32):
         -------
         R: torch.tensor Nx3x3
             The rotation matrices for the given axis-angle parameters
-    '''
+    """
 
     batch_size = rot_vecs.shape[0]
     device = rot_vecs.device

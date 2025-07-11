@@ -1,21 +1,25 @@
-import os, sys
-import torch
-import torchvision.transforms as transforms
-import numpy as np
-import cv2
-import scipy
-from skimage.io import imread, imsave
-from skimage.transform import estimate_transform, warp, resize, rescale
+import os
 from glob import glob
-from torch.utils.data import Dataset, DataLoader, ConcatDataset
+
+import numpy as np
+import scipy
 import scipy.io
+import torch
+from skimage.io import imread
+from skimage.transform import estimate_transform, warp
+from torch.utils.data import Dataset
+
 
 class AFLW2000(Dataset):
-    def __init__(self, testpath='/ps/scratch/yfeng/Data/AFLW2000/GT', crop_size=224):
-        '''
-            data class for loading AFLW2000 dataset
-            make sure each image has corresponding mat file, which provides cropping infromation
-        '''
+    def __init__(
+        self,
+        testpath='/ps/scratch/yfeng/Data/AFLW2000/GT',
+        crop_size=224
+    ):
+        """
+        data class for loading AFLW2000 dataset
+        make sure each image has corresponding mat file, which provides cropping infromation
+        """
         if os.path.isdir(testpath): 
             self.imagepath_list = glob(testpath + '/*.jpg') +  glob(testpath + '/*.png')
         elif isinstance(testpath, list):

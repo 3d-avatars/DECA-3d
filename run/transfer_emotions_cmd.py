@@ -13,16 +13,16 @@
 # For comments or questions, please email us at deca@tue.mpg.de
 # For commercial licensing contact, please contact ps-license@tuebingen.mpg.de
 
-import os, sys
+import argparse
+import os
+import sys
+
 import cv2
 import numpy as np
-from time import time
-import argparse
 import torch
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from decalib.deca import DECA
-from decalib.datasets import datasets 
 from decalib.utils import util
 from decalib.utils.config import cfg as deca_cfg
 
@@ -32,11 +32,11 @@ def main(args):
     os.makedirs(savefolder, exist_ok=True)
 
     # load test images 
-    testdata = datasets.TestData(args.image_path, iscrop=args.iscrop, face_detector=args.detector)
-    expdata = datasets.TestData(args.exp_path, iscrop=args.iscrop, face_detector=args.detector)
+    testdata = datasets.TestData(args.image_path, is_crop=args.is_crop, face_detector=args.detector)
+    expdata = datasets.TestData(args.exp_path, is_crop=args.is_crop, face_detector=args.detector)
 
     # run DECA
-    deca_cfg.model.use_tex = args.useTex
+    deca_cfg.model.use_texture = args.useTex
     deca_cfg.rasterizer_type = args.rasterizer_type
     deca = DECA(config = deca_cfg, device=device)
     # identity reference
@@ -89,7 +89,7 @@ def main(args):
             for vis_name in ['inputs', 'rendered_images', 'albedo_images', 'shape_images', 'shape_detail_images']:
                 if vis_name not in visdict.keys():
                     continue
-                image  =util.tensor2image(visdict[vis_name][0])
+                image = util.tensor2image(visdict[vis_name][0])
                 cv2.imwrite(os.path.join(savefolder, name, save_type, name + '_' + vis_name +'.jpg'), util.tensor2image(visdict[vis_name][0]))
     print(f'-- please check the results in {savefolder}')
 

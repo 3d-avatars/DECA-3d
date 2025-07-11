@@ -1,10 +1,10 @@
-'''
+"""
 Default config for DECA
-'''
-from yacs.config import CfgNode as CN
+"""
 import argparse
-import yaml
 import os
+
+from yacs.config import CfgNode as CN
 
 cfg = CN()
 
@@ -39,7 +39,7 @@ cfg.model.n_exp = 50
 cfg.model.n_cam = 3
 cfg.model.n_pose = 6
 cfg.model.n_light = 27
-cfg.model.use_tex = True
+cfg.model.use_texture = True
 cfg.model.jaw_type = 'aa' # default use axis angle, another option: euler. Note that: aa is not stable in the beginning
 # face recognition model
 cfg.model.fr_model_path = os.path.join(cfg.deca_dir, 'data', 'resnet50_ft_weight.pkl')
@@ -119,9 +119,11 @@ def get_cfg_defaults():
     # This is for the "local variable" use pattern
     return cfg.clone()
 
+
 def update_cfg(cfg, cfg_file):
     cfg.merge_from_file(cfg_file)
     return cfg.clone()
+
 
 def parse_args():
     parser = argparse.ArgumentParser()

@@ -1,4 +1,4 @@
-# '''
+# """
 # second step:
 # train the coarse model for 1.5 epochs with a batch size of 32, with 4 images per subject
 # with 𝜆𝑝ℎ𝑜=2.0, 𝜆𝑖𝑑=0.2, 𝜆𝑠𝑐=1.0, 𝜆𝑙𝑚𝑘=1.0, 𝜆𝑒𝑦𝑒=1.0, 𝜆𝜷=1𝑒−4, and 𝜆𝝍=1𝑒−4.

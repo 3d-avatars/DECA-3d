@@ -1,19 +1,16 @@
-import torch.nn as nn
+from functools import reduce
+
 import numpy as np
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
-import torch.autograd as autograd
-from functools import reduce
-import torchvision.models as models
-import cv2
 import torchfile
-from torch.autograd import Variable
-
-from . import util
+import torchvision.models as models
 
 
 def l2_distance(verts1, verts2):
     return torch.sqrt(((verts1 - verts2)**2).sum(2)).mean(1).mean()
+
 
 ### VAE
 def kl_loss(texcode):
@@ -29,26 +26,28 @@ def kl_loss(texcode):
     # KL divergence
     return KLD
 
+
 ### ------------------------------------- Losses/Regularizations for shading
 # white shading
 # uv_mask_tf = tf.expand_dims(tf.expand_dims(tf.constant( self.uv_mask, dtype = tf.float32 ), 0), -1)
 # mean_shade = tf.reduce_mean( tf.multiply(shade_300W, uv_mask_tf) , axis=[0,1,2]) * 16384 / 10379
 # G_loss_white_shading = 10*norm_loss(mean_shade,  0.99*tf.ones([1, 3], dtype=tf.float32), loss_type = "l2")
 def shading_white_loss(shading):
-    '''
+    """
     regularize lighting: assume lights close to white 
-    '''
+    """
     # rgb_diff = (shading[:,0] - shading[:,1])**2 + (shading[:,0] - shading[:,2])**2 + (shading[:,1] - shading[:,2])**2
     # rgb_diff = (shading[:,0].mean([1,2]) - shading[:,1].mean([1,2]))**2 + (shading[:,0].mean([1,2]) - shading[:,2].mean([1,2]))**2 + (shading[:,1].mean([1,2]) - shading[:,2].mean([1,2]))**2
     # rgb_diff = (shading.mean([2, 3]) - torch.ones((shading.shape[0], 3)).float().cuda())**2
     rgb_diff = (shading.mean([0, 2, 3]) - 0.99)**2
     return rgb_diff.mean()
 
+
 def shading_smooth_loss(shading):
-    '''
+    """
     assume: shading should be smooth
     ref: Lifting AutoEncoders: Unsupervised Learning of a Fully-Disentangled 3D Morphable Model using Deep Non-Rigid Structure from Motion
-    '''
+    """
     dx = shading[:,:,1:-1,1:] - shading[:,:,1:-1,:-1]
     dy = shading[:,:,1:,1:-1] - shading[:,:,:-1,1:-1]
     gradient_image = (dx**2).mean() + (dy**2).mean()
@@ -68,12 +67,13 @@ def shading_smooth_loss(shading):
 
 # G_loss_local_albedo_const = (G_loss_local_albedo_const_u + G_loss_local_albedo_const_v)*10
 
+
 def albedo_constancy_loss(albedo, alpha = 15, weight = 1.):
-    '''
+    """
     for similarity of neighbors
     ref: Self-supervised Multi-level Face Model Learning for Monocular Reconstruction at over 250 Hz
         Towards High-fidelity Nonlinear 3D Face Morphable Model
-    '''
+    """
     albedo_chromaticity = albedo/(torch.sum(albedo, dim=1, keepdim=True) + 1e-6)
     weight_x = torch.exp(-alpha*(albedo_chromaticity[:,:,1:,:] - albedo_chromaticity[:,:,:-1,:])**2).detach()
     weight_y = torch.exp(-alpha*(albedo_chromaticity[:,:,:,1:] - albedo_chromaticity[:,:,:,:-1])**2).detach()
@@ -82,6 +82,7 @@ def albedo_constancy_loss(albedo, alpha = 15, weight = 1.):
     
     albedo_constancy_loss = albedo_const_loss_x.mean() + albedo_const_loss_y.mean()
     return albedo_constancy_loss*weight
+
 
 def albedo_ring_loss(texcode, ring_elements, margin, weight=1.):
         """
@@ -107,6 +108,7 @@ def albedo_ring_loss(texcode, ring_elements, margin, weight=1.):
         tot_ring_loss = (1.0/count) * tot_ring_loss
         return tot_ring_loss * weight
 
+
 def albedo_same_loss(albedo, ring_elements, weight=1.):
         """
             computes ring loss for ring_outputs before FLAME decoder
@@ -125,6 +127,7 @@ def albedo_same_loss(albedo, ring_elements, weight=1.):
         loss = loss/ring_elements
         return loss * weight
 
+
 ### ------------------------------------- Losses/Regularizations for vertices
 def batch_kp_2d_l1_loss(real_2d_kp, predicted_2d_kp, weights=None):
     """
@@ -141,6 +144,7 @@ def batch_kp_2d_l1_loss(real_2d_kp, predicted_2d_kp, weights=None):
     k = torch.sum(vis) * 2.0 + 1e-8
     dif_abs = torch.abs(kp_gt[:, :2] - kp_pred).sum(1)
     return torch.matmul(dif_abs, vis) * 1.0 / k
+
 
 def landmark_loss(predicted_landmarks, landmarks_gt, weight=1.):
     # (predicted_theta, predicted_verts, predicted_landmarks) = ringnet_outputs[-1]
@@ -162,6 +166,7 @@ def eye_dis(landmarks):
     dis = torch.sqrt(((eye_up - eye_bottom)**2).sum(2)) #[bz, 4]
     return dis
 
+
 def eyed_loss(predicted_landmarks, landmarks_gt, weight=1.):
     if torch.is_tensor(landmarks_gt) is not True:
         real_2d = torch.cat(landmarks_gt).cuda()
@@ -173,6 +178,7 @@ def eyed_loss(predicted_landmarks, landmarks_gt, weight=1.):
     loss = (pred_eyed - gt_eyed).abs().mean()
     return loss
 
+
 def lip_dis(landmarks):
     # up inner lip:  [62, 63, 64] - 1
     # down innder lip: [68, 67, 66] -1
@@ -180,6 +186,7 @@ def lip_dis(landmarks):
     lip_down = landmarks[:,[67, 66, 65], :]
     dis = torch.sqrt(((lip_up - lip_down)**2).sum(2)) #[bz, 4]
     return dis
+
 
 def lipd_loss(predicted_landmarks, landmarks_gt, weight=1.):
     if torch.is_tensor(landmarks_gt) is not True:
@@ -191,7 +198,8 @@ def lipd_loss(predicted_landmarks, landmarks_gt, weight=1.):
 
     loss = (pred_lipd - gt_lipd).abs().mean()
     return loss
-    
+
+
 def weighted_landmark_loss(predicted_landmarks, landmarks_gt, weight=1.):
     #smaller inner landmark weights
     # (predicted_theta, predicted_verts, predicted_landmarks) = ringnet_outputs[-1]
@@ -213,6 +221,7 @@ def weighted_landmark_loss(predicted_landmarks, landmarks_gt, weight=1.):
 
     loss_lmk_2d = batch_kp_2d_l1_loss(real_2d, predicted_landmarks, weights)
     return loss_lmk_2d * weight
+
 
 def landmark_loss_tensor(predicted_landmarks, landmarks_gt, weight=1.):
     # (predicted_theta, predicted_verts, predicted_landmarks) = ringnet_outputs[-1]
@@ -322,6 +331,7 @@ def get_laplacian_kernel2d(kernel_size: int):
     kernel_2d: torch.Tensor = kernel
     return kernel_2d
 
+
 def laplacian_hq_loss(prediction, gt):
     # https://torchgeometry.readthedocs.io/en/latest/_modules/kornia/filters/laplacian.html
     b, c, h, w = prediction.shape
@@ -335,7 +345,6 @@ def laplacian_hq_loss(prediction, gt):
     return ((lap_pre - lap_gt)**2).mean()
 
 
-## 
 class VGG19FeatLayer(nn.Module):
     def __init__(self):
         super(VGG19FeatLayer, self).__init__()
@@ -369,6 +378,7 @@ class VGG19FeatLayer(nn.Module):
             out[name] = x
         # print([x for x in out])
         return out
+
 
 class IDMRFLoss(nn.Module):
     def __init__(self, featlayer=VGG19FeatLayer):
@@ -455,10 +465,8 @@ class IDMRFLoss(nn.Module):
         # return loss
 
 
-
 ######################################################## vgg16 face
-
-class VGG_16(nn.Module):
+class VGG16(nn.Module):
     """
     Main Class
     """
@@ -549,10 +557,11 @@ class VGG_16(nn.Module):
         out['last'] = x
         return out
 
+
 class VGGLoss(nn.Module):
     def __init__(self):
         super(VGGLoss, self).__init__()
-        self.featlayer = VGG_16().float()
+        self.featlayer = VGG16().float()
         self.featlayer.load_weights(path="data/face_recognition_model/vgg_face_torch/VGG_FACE.t7")
         self.featlayer = self.featlayer.cuda().eval()
         self.feat_style_layers = {'relu3_2': 1.0, 'relu4_2': 1.0}
@@ -633,6 +642,7 @@ class VGGLoss(nn.Module):
         # for key in self.feat_style_layers.keys():
         #     loss += torch.mean((gen_vgg_feats[key] - tar_vgg_feats[key])**2)
         # return loss
+
 
 ##############################################
 ## ref: https://github.com/cydonia999/VGGFace2-pytorch

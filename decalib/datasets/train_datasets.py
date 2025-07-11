@@ -1,15 +1,19 @@
-import os, sys
-import torch
-from torch.utils.data import Dataset, DataLoader, ConcatDataset
-import torchvision.transforms as transforms
-import numpy as np
-import cv2
-import scipy
-from skimage.io import imread, imsave
-from skimage.transform import estimate_transform, warp, resize, rescale
+import os
 from glob import glob
 
-from . import detectors
+import cv2
+import numpy as np
+import torch
+from skimage.io import imread
+from skimage.transform import estimate_transform, warp, rescale
+from torch.utils.data import Dataset, DataLoader, ConcatDataset
+
+from .aflw2000 import AFLW2000
+from .detectors import FAN, MTCNN
+from .ethnicity import EthnicityDataset
+from .now import NoWDataset
+from .vggface import VGGFace2Dataset, VGGFace2HQDataset
+
 
 def build_dataloader(config, is_train=True):
     data_list = []
@@ -27,8 +31,8 @@ def build_dataloader(config, is_train=True):
         data_list.append(COCODataset(image_size=config.image_size, scale=[config.scale_min, config.scale_max], trans_scale=config.trans_scale))
     if 'celebahq' in config.training_data:
         data_list.append(CelebAHQDataset(image_size=config.image_size, scale=[config.scale_min, config.scale_max], trans_scale=config.trans_scale))
-    if 'now_eval' in config.training_data:
-        data_list.append(NoWVal())
+    if 'now' in config.training_data:
+        data_list.append(NoWDataset())
     if 'aflw2000' in config.training_data:
         data_list.append(AFLW2000())
     train_dataset = ConcatDataset(data_list)
@@ -45,9 +49,9 @@ def build_dataloader(config, is_train=True):
     # print('---- data length: ', len(train_dataset))
     return train_dataset, train_loader
 
-'''
+"""
 images and keypoints: nomalized to [-1,1]
-'''
+"""
 class VoxelDataset(Dataset):
     def __init__(self, K, image_size, scale, trans_scale = 0, dataname='vox2', n_train=100000, isTemporal=False, isEval=False, isSingle=False):
         self.K = K
@@ -205,10 +209,10 @@ class VoxelDataset(Dataset):
 
 class COCODataset(Dataset):
     def __init__(self, image_size, scale, trans_scale = 0, isEval=False):
-        '''
+        """
         # 53877 faces
         K must be less than 6
-        '''
+        """
         self.image_size = image_size
         self.imagefolder = '/ps/scratch/yfeng/Data/COCO/raw/train2017'
         self.kptfolder = '/ps/scratch/yfeng/Data/COCO/face/train2017_kpt'
@@ -298,10 +302,10 @@ class COCODataset(Dataset):
 
 class CelebAHQDataset(Dataset):
     def __init__(self, image_size, scale, trans_scale = 0, isEval=False):
-        '''
+        """
         # 53877 faces
         K must be less than 6
-        '''
+        """
         self.image_size = image_size
         self.imagefolder = '/ps/project/face2d3d/faceHQ_100K/celebA-HQ/celebahq_resized_256'
         self.kptfolder = '/ps/project/face2d3d/faceHQ_100K/celebA-HQ/celebahq_resized_256_torch'
@@ -410,9 +414,9 @@ def video2sequence(video_path):
     
 class TestData(Dataset):
     def __init__(self, testpath, iscrop=True, crop_size=224, scale=1.25, face_detector='fan', face_detector_model=None):
-        '''
+        """
             testpath: folder, imagepath_list, image path, video path
-        '''
+        """
         if isinstance(testpath, list):
             self.imagepath_list = testpath
         elif os.path.isdir(testpath): 
@@ -431,10 +435,10 @@ class TestData(Dataset):
         self.scale = scale
         self.iscrop = iscrop
         self.resolution_inp = crop_size
-        if face_detector == 'dlib':
-            self.face_detector = detectors.Dlib(model_path=face_detector_model)
+        if face_detector == 'mtcnn':
+            self.face_detector = MTCNN()
         elif face_detector == 'fan':
-            self.face_detector = detectors.FAN()
+            self.face_detector = FAN()
         else:
             print('no detector is used')
 
@@ -496,9 +500,9 @@ class TestData(Dataset):
     
 class EvalData(Dataset):
     def __init__(self, testpath, kptfolder, iscrop=True, crop_size=224, scale=1.25, face_detector='fan', face_detector_model=None):
-        '''
+        """
             testpath: folder, imagepath_list, image path, video path
-        '''
+        """
         if isinstance(testpath, list):
             self.imagepath_list = testpath
         elif os.path.isdir(testpath): 

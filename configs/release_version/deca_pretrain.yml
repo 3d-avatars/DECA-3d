@@ -1,4 +1,4 @@
-# '''
+# """
 # first step:
 # pre-train the coarse model (i.e.𝐸𝑐) for two epochs with a batch size of 64,
 # with 𝜆𝑙𝑚𝑘=1𝑒−4, 𝜆𝑒𝑦𝑒=1.0, 𝜆𝜷=1𝑒−4, and 𝜆𝝍=1𝑒−4
@@ -9,7 +9,7 @@
 # and also, photometric loss needs differentiable rendering that makes the training slow
 # 
 # 
-# '''
+# """
 output_dir: "/ps/scratch/yfeng/Data/Projects-data/DECA-training/training/DECA_release_version/pretrain"
 pretrained_modelpath: ''
 dataset:

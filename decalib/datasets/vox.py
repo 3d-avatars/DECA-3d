@@ -1,13 +1,11 @@
-import os, sys
-import torch
-import torchvision.transforms as transforms
+import os
+
 import numpy as np
-import cv2
-import scipy
-from skimage.io import imread, imsave
-from skimage.transform import estimate_transform, warp, resize, rescale
-from glob import glob
-from torch.utils.data import Dataset, DataLoader, ConcatDataset
+import torch
+from skimage.io import imread
+from skimage.transform import estimate_transform, warp
+from torch.utils.data import Dataset
+
 
 class VoxelDataset(Dataset):
     def __init__(self, K, image_size, scale, trans_scale = 0, dataname='vox2', n_train=100000, isTemporal=False, isEval=False, isSingle=False):

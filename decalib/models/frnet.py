@@ -1,16 +1,22 @@
-import torch.nn as nn
-import numpy as np
-import torch
 # from pro_gan_pytorch.PRO_GAN import ProGAN, Generator, Discriminator
-import torch.nn.functional as F
-import cv2
-from torch.autograd import Variable
 import math
+import pickle
+
+import torch
+import torch.nn as nn
+
 
 def conv3x3(in_planes, out_planes, stride=1):
     """3x3 convolution with padding"""
-    return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
-                     padding=1, bias=False)
+    return nn.Conv2d(
+        in_planes,
+        out_planes,
+        kernel_size=3,
+        stride=stride,
+        padding=1,
+        bias=False
+    )
+
 
 class BasicBlock(nn.Module):
     expansion = 1
@@ -146,13 +152,14 @@ class ResNet(nn.Module):
         x = self.fc(x)
         return x
 
+
 def resnet50(**kwargs):
     """Constructs a ResNet-50 model.
     """
     model = ResNet(Bottleneck, [3, 4, 6, 3], **kwargs)
     return model
 
-import pickle
+
 def load_state_dict(model, fname):
     """
     Set parameters converted from Caffe models authors of VGGFace2 provide.
@@ -174,4 +181,3 @@ def load_state_dict(model, fname):
                                    'dimensions in the checkpoint are {}.'.format(name, own_state[name].size(), param.size()))
         else:
             raise KeyError('unexpected key "{}" in state_dict'.format(name))
-
